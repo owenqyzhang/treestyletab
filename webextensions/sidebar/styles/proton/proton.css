@@ -54,7 +54,7 @@
   --throbber-color-active: var(--browser-loading-indicator, var(--tab-text-active));
 
   --tabbar-bg: light-dark(
-    -moz-dialog,
+    Canvas,
     var(--browser-bg-darker, var(--dark-frame))
   );
 
@@ -81,8 +81,8 @@
 */
 
 :root[color-scheme="system-color"][data-user-agent*="Linux"] {
-  --toolbar-non-lwt-textcolor: -moz-dialogtext;
-  --toolbar-non-lwt-bgcolor: -moz-dialog;
+  --toolbar-non-lwt-textcolor: CanvasText;
+  --toolbar-non-lwt-bgcolor: Canvas;
   --in-content-box-border-color-mixed: var(--ThreeDShadow);
 }
 :root[color-scheme="system-color"][data-user-agent*="Linux"] #background {

@@ -115,6 +115,11 @@ const CrossContextMessagingBG = (() => {
     }
   });
 
+  // The client registry is in-memory only, so it is lost when the background
+  // service worker is restarted (Chrome MV3). Ask surviving clients to
+  // re-announce their client IDs (they respond with NOTIFY_CLIENT_ID).
+  channel.postMessage({ type: 'REQ_CLIENT_ID' });
+
   async function dispatchRequestBroadcastChannel(tabId, senderClientId, id, message) {
     let responded = false;
 

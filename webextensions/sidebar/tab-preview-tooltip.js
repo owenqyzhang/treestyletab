@@ -24,8 +24,14 @@ import * as Sidebar from './sidebar.js';
 import { kEVENT_TREE_ITEM_SUBSTANCE_ENTER, kEVENT_TREE_ITEM_SUBSTANCE_LEAVE } from './components/TreeItemSubstanceElement.js';
 
 const CAPTURABLE_URLS_MATCHER         = /^(https?|data):/;
-const PREVIEW_WITH_HOST_URLS_MATCHER  = /^(https?|moz-extension):/;
+const PREVIEW_WITH_HOST_URLS_MATCHER  = /^(https?|moz-extension|chrome-extension):/;
 const PREVIEW_WITH_TITLE_URLS_MATCHER = /^file:/;
+
+// On Chrome the in-content panel is unavailable (it requires
+// tabs.executeScript() with a code string, forbidden on MV3), and there is
+// no API to capture a non-active tab: the compat shim's captureTab falls
+// back to captureVisibleTab which always returns the active tab's contents.
+const IS_CHROME = typeof chrome != 'undefined' && !!chrome.sidePanel;
 
 document.addEventListener(kEVENT_TREE_ITEM_SUBSTANCE_ENTER, onTabSubstanceEnter);
 document.addEventListener(kEVENT_TREE_ITEM_SUBSTANCE_LEAVE, onTabSubstanceLeave);
@@ -45,13 +51,13 @@ const mController = new InContentPanelController({
     return configs.logFor['sidebar/tab-preview-tooltip'] && configs.debug;
   },
   canRenderInSidebar() {
-    return !!(configs.tabPreviewTooltipRenderIn & Constants.kIN_CONTENT_PANEL_RENDER_IN_SIDEBAR);
+    return IS_CHROME || !!(configs.tabPreviewTooltipRenderIn & Constants.kIN_CONTENT_PANEL_RENDER_IN_SIDEBAR);
   },
   canRenderInContent() {
-    return !!(configs.tabPreviewTooltipRenderIn & Constants.kIN_CONTENT_PANEL_RENDER_IN_CONTENT);
+    return !IS_CHROME && !!(configs.tabPreviewTooltipRenderIn & Constants.kIN_CONTENT_PANEL_RENDER_IN_CONTENT);
   },
   shouldFallbackToSidebar() {
-    return !!(configs.tabPreviewTooltipRenderIn & Constants.kIN_CONTENT_PANEL_RENDER_IN_SIDEBAR);
+    return IS_CHROME || !!(configs.tabPreviewTooltipRenderIn & Constants.kIN_CONTENT_PANEL_RENDER_IN_SIDEBAR);
   },
   canSendPossibleExpiredMessage(message) {
     return (
@@ -69,7 +75,10 @@ const mController = new InContentPanelController({
     let destroy;
 
     const onMouseMove = event => {
-      const onPanel = !!event.originalTarget?.closest('.in-content-panel.extended')
+      // event.originalTarget is Firefox-only: on other browsers events from
+      // inside the closed shadow root are retargeted to the container host.
+      const onPanel = !!(event.originalTarget?.closest?.('.in-content-panel.extended') ||
+                         (window.closedContainerType && event.target?.localName == window.closedContainerType));
       if (logging) {
         console.log('mouse move on the content area: ', { onPanel });
       }
@@ -138,6 +147,7 @@ async function onTabSubstanceEnter(event) {
   }
 
   const hasPreview = (
+    !IS_CHROME && // Chrome cannot capture non-active tabs, so degrade to the title/URL-only tooltip
     raw?.type == TreeItem.TYPE_TAB &&
     !active &&
     !raw?.discarded &&

@@ -229,8 +229,8 @@ export function bindToCheckbox(permissions, checkbox, options = {}) {
 
       log('fallback to the failsafe method');
       configs.requestingPermissions = permissions;
-      browser.browserAction.setBadgeText({ text: '!' });
-      browser.browserAction.setPopup({ popup: '' });
+      browser.action.setBadgeText({ text: '!' });
+      browser.action.setPopup({ popup: '' });
 
       notify({
         title:   browser.i18n.getMessage('config_requestPermissions_fallbackToToolbarButton_title'),
@@ -287,8 +287,8 @@ export function bindToClickable(permissions, node, { onChanged } = {}) {
       }
 
       configs.requestingPermissions = permissions;
-      browser.browserAction.setBadgeText({ text: '!' });
-      browser.browserAction.setPopup({ popup: '' });
+      browser.action.setBadgeText({ text: '!' });
+      browser.action.setPopup({ popup: '' });
 
       notify({
         title:   browser.i18n.getMessage('config_requestPermissions_fallbackToToolbarButton_title'),
@@ -311,7 +311,7 @@ export function requestPostProcess() {
   configs.requestingPermissions = null;
   configs.requestingPermissionsNatively = permissions;
 
-  browser.browserAction.setBadgeText({ text: '' });
+  browser.action.setBadgeText({ text: '' });
   browser.permissions.request(permissions)
     .then(granted => {
       log('permission requested: ', permissions, granted);

@@ -26,6 +26,7 @@ import * as TabsStore from '/common/tabs-store.js';
 import * as TabsUpdate from '/common/tabs-update.js';
 import * as TSTAPI from '/common/tst-api.js';
 import * as UniqueId from '/common/unique-id.js';
+import { getDarkModeMediaQuery } from '/common/compat-media.js';
 import '/common/bookmark.js'; // we need to load this once in the background page to register the global listener
 
 import MetricsData from '/common/MetricsData.js';
@@ -62,7 +63,14 @@ export const onDestroy = new EventListenerManager();
 
 export const instanceId = `${Date.now()}-${parseInt(Math.random() * 65000)}`;
 
-const mDarkModeMatchMedia = window.matchMedia('(prefers-color-scheme: dark)');
+// On Chrome we run as an MV3 service worker: there is no window/matchMedia,
+// and chrome.action cannot load SVG icons, so we keep the manifest-declared
+// PNG icons there.
+const IS_CHROME = typeof window == 'undefined' || /Chrome\//.test(navigator.userAgent);
+
+const mDarkModeMatchMedia = typeof window != 'undefined' ?
+  window.matchMedia('(prefers-color-scheme: dark)') :
+  null; // the service worker case is handled with getDarkModeMediaQuery() instead
 
 let mInitialized = false;
 const mPreloadedCaches = new Map();
@@ -110,7 +118,8 @@ const promisedRestored = UniqueId.ensurePersistentIdRestored(tab => { // this mu
 export async function init() {
   log('init: start');
   MetricsData.add('init: start');
-  window.addEventListener('pagehide', destroy, { once: true });
+  if (typeof window != 'undefined') // there is no unload event in the Chrome MV3 service worker
+    window.addEventListener('pagehide', destroy, { once: true });
 
   onInit.dispatch();
   SidebarConnection.init();
@@ -345,7 +354,7 @@ export async function tryStartHandleAccelKeyOnTab(tab) {
     return;
   const granted = await Permissions.isGranted(Permissions.ALL_URLS);
   if (!granted ||
-      /^(about|chrome|resource):/.test(tab.url))
+      /^(about|chrome|resource|devtools|view-source|chrome-extension):/.test(tab.url))
     return;
   try {
     //log(`tryStartHandleAccelKeyOnTab: initialize tab ${tab.id}`);
@@ -584,7 +593,10 @@ export async function confirmToCloseTabs(tabs, {
   }
 
   const closingNonEmptyTabs = tabs.filter(tab =>
-    tab.url != 'about:blank' && !tab.$TST?.isNewTabCommandTab
+    tab.url != 'about:blank' &&
+    tab.url != 'chrome://newtab/' && // Chrome's new tab page
+    tab.url != 'chrome://new-tab-page/' &&
+    !tab.$TST?.isNewTabCommandTab
   );
   if (closingNonEmptyTabs.length == 0 && closingCount == 0) {
     log('confirmToCloseTabs: skip confirmation because all tabs are new tabs');
@@ -808,6 +820,9 @@ const BASE_ICONS = {
   '32': '/resources/32x32.svg',
 };
 async function updateIconForBrowserTheme(theme) {
+  if (IS_CHROME) // Chrome cannot load SVG action icons and has no menu icons/theme API: keep the manifest-declared PNG icons.
+    return;
+
   // generate icons with theme specific color
   const toolbarIcons = {};
   const menuIcons    = {};
@@ -875,15 +890,26 @@ browser.permissions.onAdded?.addListener(addedPermissions => {
   updateIconForBrowserTheme();
 
   if (browser.browserSettings && 'verticalTabs' in browser.browserSettings &&
+      browser.browserSettings.verticalTabs.onChange && // the compat shim's stub settings have no onChange
       !updateIconForBrowserTheme.$listeningBrowserSettings) {
     updateIconForBrowserTheme.$listeningBrowserSettings = true;
     browser.browserSettings.verticalTabs.onChange.addListener(_details => updateIconForBrowserTheme());
   }
 });
 
-mDarkModeMatchMedia.addListener(async _event => {
-  updateIconForBrowserTheme();
-});
+if (mDarkModeMatchMedia) {
+  mDarkModeMatchMedia.addListener(async _event => {
+    updateIconForBrowserTheme();
+  });
+}
+else {
+  // Chrome MV3 service worker: the media query is emulated via an offscreen document.
+  getDarkModeMediaQuery().then(mql => {
+    mql.addListener(async _event => {
+      updateIconForBrowserTheme();
+    });
+  });
+}
 
 
 
@@ -915,7 +941,8 @@ configs.$addObserver(key => {
 });
 
 if (browser.browserSettings &&
-    'verticalTabs' in browser.browserSettings) {
+    'verticalTabs' in browser.browserSettings &&
+    browser.browserSettings.verticalTabs.onChange) { // the compat shim's stub settings have no onChange
   updateIconForBrowserTheme.$listeningBrowserSettings = true;
   browser.browserSettings.verticalTabs.onChange.addListener(_details => updateIconForBrowserTheme());
 }

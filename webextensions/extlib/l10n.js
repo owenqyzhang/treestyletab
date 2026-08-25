@@ -84,7 +84,8 @@ var l10n = {
   }
 };
 
-document.addEventListener('DOMContentLoaded', () => {
-  l10n.updateDocument();
-}, { once: true });
+if (typeof document != 'undefined') // safety belt: don't crash if loaded in a worker
+  document.addEventListener('DOMContentLoaded', () => {
+    l10n.updateDocument();
+  }, { once: true });
 export default l10n;

@@ -5,6 +5,10 @@
 */
 'use strict';
 
+// must be imported first: installs the `browser` global on Chrome
+// (startup.html does not load it by itself)
+import '/common/browser-compat.js';
+
 import '/extlib/l10n.js';
 
 import {

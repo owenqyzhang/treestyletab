@@ -10,6 +10,7 @@ import {
   configs,
   wait,
 } from './common.js';
+import { IS_CHROME } from './browser-compat.js';
 import * as ApiTabs from './api-tabs.js';
 import * as Constants from './constants.js';
 import * as TabsStore from './tabs-store.js';
@@ -141,8 +142,13 @@ export function ensurePersistentIdRestored(onTabRestored) {
   ]));
 }
 
+// On Chrome the sessions shim resolves restored values before getTabValue
+// returns, so retries after the first read are usually futile: cap them
+// quickly to avoid a 1sec-per-tab startup delay.
+const kPERSISTENT_ID_MAX_RETRY_COUNT = IS_CHROME ? 2 : 10;
+
 async function waitUntilPersistentIdBecomeAvailable(tabId, retryCount = 0) {
-  if (retryCount > 10) {
+  if (retryCount > kPERSISTENT_ID_MAX_RETRY_COUNT) {
     console.log(`could not get persistent ID for ${tabId}`);
     return null;
   }

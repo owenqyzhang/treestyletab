@@ -107,7 +107,10 @@ function setSuccessor(tabId, successorTabId = -1) {
         !error.message ||
         (!error.message.startsWith('Invalid successorTabId') &&
          // This error may happen at the time just after a tab is detached from its original window.
-         !error.message.startsWith('Successor tab must be in the same window as the tab being updated')))
+         !error.message.startsWith('Successor tab must be in the same window as the tab being updated') &&
+         // Chrome (via the compat shim's successor emulation) reports a
+         // missing tab with a different message.
+         !error.message.includes('No tab with id:')))
       throw error;
   }));
 }

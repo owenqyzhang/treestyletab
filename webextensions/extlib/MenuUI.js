@@ -1047,8 +1047,8 @@
 
         /* panel-like appearance */
         ${common}.panel {
-          --menu-ui-background-color: -moz-dialog;
-          --menu-ui-text-color: -moz-dialogtext;
+          --menu-ui-background-color: Canvas;
+          --menu-ui-text-color: CanvasText;
           --menu-ui-background-color-active: Highlight;
           --menu-ui-text-color-active: HighlightText;
         }
@@ -1082,7 +1082,7 @@
         ${common}.menu-ui.menu ul {
           border: 1px outset Menu;
           box-shadow: 0.1em 0.1em 0.5em rgba(0, 0, 0, 0.65);
-          font: -moz-pull-down-menu;
+          font: menu;
         }
 
         ${common}.menu-ui.menu li {

@@ -34,16 +34,33 @@ async function doTest() {
 }
 
 async function autoDetectSuitableDelay() {
+  const previousDelay = configs.delayForDuplicatedTabDetection;
   configs.delayForDuplicatedTabDetection = 0;
   let successRate = await doTest();
   if (successRate == 1)
     return;
 
   configs.delayForDuplicatedTabDetection = 10;
-  while (successRate < 1) {
+  // Safety valve: if longer delay never improves the result (e.g. on
+  // Chrome, when duplicated tabs cannot be detected at all), give up
+  // instead of duplicating tabs forever.
+  const maxTryCount = 10;
+  let zeroSuccessCount = 0;
+  for (let tryCount = 0; tryCount < maxTryCount; tryCount++) {
     configs.delayForDuplicatedTabDetection = Math.round(configs.delayForDuplicatedTabDetection * (1 / Math.max(successRate, 0.5)));
     successRate = await doTest();
+    if (successRate == 1)
+      return;
+    if (successRate == 0) {
+      if (++zeroSuccessCount >= 2)
+        break;
+    }
+    else {
+      zeroSuccessCount = 0;
+    }
   }
+  // detection failed: restore the last effective value
+  configs.delayForDuplicatedTabDetection = previousDelay;
 }
 
 browser.runtime.onMessage.addListener((message, _sender) => {

@@ -47,7 +47,7 @@ export async function bookmarkTab(tab, { parentId, showDialog } = {}) {
     notify({
       title:   browser.i18n.getMessage('bookmark_notification_notPermitted_title'),
       message: browser.i18n.getMessage(`bookmark_notification_notPermitted_message${isLinux() ? '_linux' : ''}`),
-      url:     `moz-extension://${window.location.host}/options/options.html#bookmarksPermissionSection`
+      url:     browser.runtime.getURL('options/options.html#bookmarksPermissionSection')
     });
     return null;
   }
@@ -63,7 +63,7 @@ export async function bookmarkTab(tab, { parentId, showDialog } = {}) {
   if (showDialog) {
     const windowId = tab.windowId;
     const dialogParams = {
-      inline: window.location.pathname.startsWith('/sidebar/'),
+      inline: Constants.IS_SIDEBAR,
       tabId:  tab.id,
       values: {
         title,
@@ -117,7 +117,7 @@ export async function bookmarkTabs(tabs, { parentId, index, showDialog, title } 
     notify({
       title:   browser.i18n.getMessage('bookmark_notification_notPermitted_title'),
       message: browser.i18n.getMessage('bookmark_notification_notPermitted_message'),
-      url:     `moz-extension://${window.location.host}/options/options.html#bookmarksPermissionSection`
+      url:     browser.runtime.getURL('options/options.html#bookmarksPermissionSection')
     });
     return null;
   }
@@ -178,7 +178,8 @@ export async function bookmarkTabs(tabs, { parentId, index, showDialog, title } 
       }
     });
   const folderParams = {
-    type: 'folder',
+    // no "type: 'folder'": it is Firefox-only and Chrome rejects it;
+    // creating without "url" produces a folder on both browsers.
     title
   };
   let parent;
@@ -198,7 +199,7 @@ export async function bookmarkTabs(tabs, { parentId, index, showDialog, title } 
   if (showDialog) {
     const windowId = tabs[0].windowId;
     const dialogParams = {
-      inline: window.location.pathname.startsWith('/sidebar/'),
+      inline: Constants.IS_SIDEBAR,
       values: folderParams,
     };
     let result;
@@ -404,7 +405,6 @@ async function tryGroupCreatedBookmarks() {
   log('create a folder for grouping');
   mCreatingCount++;
   const folder = await browser.bookmarks.create({
-    type:  'folder',
     title: bookmarks[0].title,
     index: bookmarks[0].index,
     parentId
@@ -446,7 +446,7 @@ export const BOOKMARK_TITLE_DESCENDANT_MATCHER = /^(>+) /;
 
 export async function getTreeStructureFromBookmarkFolder(folderOrId) {
   const items = folderOrId.children || await browser.bookmarks.getChildren(folderOrId.id || folderOrId);
-  return getTreeStructureFromBookmarks(items.filter(item => item.type == 'bookmark'));
+  return getTreeStructureFromBookmarks(items.filter(item => item.type == 'bookmark' || (!item.type && item.url))); // Chrome bookmark nodes have no "type"
 }
 
 export function getTreeStructureFromBookmarks(items) {

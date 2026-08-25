@@ -12,6 +12,10 @@
     <link id="nova-tokens-loader" rel="stylesheet" type="text/css" href=""/>
     <link rel="stylesheet" type="text/css" href="/extlib/codemirror.css"/>
     <link rel="stylesheet" type="text/css" href="/extlib/codemirror-colorpicker.css"/>
+    <style>
+      /* UI blocks for Firefox-only features are hidden on Chrome (see init.js) */
+      html.chrome .firefox-only { display: none !important; }
+    </style>
   </head>
   <body>
     <p><a id="link-optionsPage-top" target="_blank">__MSG_config_openOptionsInTab_label__</a>
@@ -22,7 +26,7 @@
     <section id="section-appearance">
     <h1>__MSG_config_appearance_caption__</h1>
 
-    <fieldset>
+    <fieldset class="firefox-only"><!-- Chrome: the side panel position is controlled by the user, not by extensions -->
       <legend>__MSG_config_sidebarPosition_caption__</legend>
       <ul>
         <li><label class="has-radio"
@@ -554,7 +558,7 @@
               __MSG_config_autoAttachOnOpenedWithOwner_after__
               <span class="preview-image"></span></label></p>
     <div class="expert">
-    <fieldset>
+    <fieldset class="firefox-only">
       <legend>__MSG_config_insertNewTabFromFirefoxViewAt_caption__</legend>
       <ul>
         <li><label class="has-radio"
@@ -656,7 +660,7 @@
                           <input id="guessNewOrphanTabAsOpenedByNewTabCommandUrl"
                                  size="40">
                            __MSG_config_guessNewOrphanTabAsOpenedByNewTabCommandUrl_after__</label></p>
-    <p class="sub"
+    <p class="sub firefox-only"
       ><label>__MSG_config_inheritContextualIdentityToNewTabMode_label__
               <select id="inheritContextualIdentityToNewTabMode">
                 <option value="0">__MSG_config_inheritContextualIdentityToNewTabMode_default__</option>
@@ -700,7 +704,7 @@
     <p><label>__MSG_config_longPressOnNewTabButton_before__
               <select id="longPressOnNewTabButton">
                 <option value="newtab-action-selector">__MSG_config_longPressOnNewTabButton_newTabAction__</option>
-                <option value="contextual-identities-selector">__MSG_config_longPressOnNewTabButton_contextualIdentities__</option>
+                <option class="firefox-only" value="contextual-identities-selector">__MSG_config_longPressOnNewTabButton_contextualIdentities__</option>
                 <option value="">__MSG_config_longPressOnNewTabButton_none__</option>
               </select>
               __MSG_config_longPressOnNewTabButton_after__</label></p>
@@ -708,7 +712,8 @@
              ><input id="showNewTabActionSelector"
                      type="checkbox">
              __MSG_config_showNewTabActionSelector_label__</label></p>
-    <p><label class="has-checkbox"
+    <p class="firefox-only"
+      ><label class="has-checkbox"
              ><input id="showContextualIdentitiesSelector"
                      type="checkbox">
              __MSG_config_showContextualIdentitiesSelector_label__</label></p>
@@ -737,7 +742,7 @@
                 </select>
                 __MSG_config_autoAttachSameSiteOrphan_after__
               <span class="preview-image"></span></label></p>
-      <p class="sub"
+      <p class="sub firefox-only"
         ><label>__MSG_config_inheritContextualIdentityToSameSiteOrphanMode_label__
                 <select id="inheritContextualIdentityToSameSiteOrphanMode">
                   <option value="0">__MSG_config_inheritContextualIdentityToSameSiteOrphanMode_default__</option>
@@ -755,14 +760,14 @@
                 </select>
                 __MSG_config_autoAttachOnOpenedFromExternal_after__
               <span class="preview-image"></span></label></p>
-      <p class="sub"
+      <p class="sub firefox-only"
         ><label>__MSG_config_inheritContextualIdentityToTabsFromExternalMode_label__
                 <select id="inheritContextualIdentityToTabsFromExternalMode">
                   <option value="0">__MSG_config_inheritContextualIdentityToTabsFromExternalMode_default__</option>
                   <option value="1">__MSG_config_inheritContextualIdentityToTabsFromExternalMode_parent__</option>
                   <option value="2">__MSG_config_inheritContextualIdentityToTabsFromExternalMode_lastActive__</option>
                 </select></label></p>
-      <p><label><input id="inheritContextualIdentityToUnopenableURLTabs"
+      <p class="firefox-only"><label><input id="inheritContextualIdentityToUnopenableURLTabs"
                        type="checkbox">
                 __MSG_config_inheritContextualIdentityToUnopenableURLTabs_label__</label></p>
       <hr>
@@ -778,7 +783,7 @@
                 __MSG_config_autoAttachOnAnyOtherTrigger_after__
               <span class="preview-image"></span></label>
               <strong>__MSG_config_autoAttachOnAnyOtherTrigger_caution__</strong></p>
-      <p class="sub autoAttachOnAnyOtherTrigger"
+      <p class="sub autoAttachOnAnyOtherTrigger firefox-only"
         ><label>__MSG_config_inheritContextualIdentityToTabsFromAnyOtherTriggerMode_label__
                 <select id="inheritContextualIdentityToTabsFromAnyOtherTriggerMode">
                   <option value="0">__MSG_config_inheritContextualIdentityToTabsFromAnyOtherTriggerMode_default__</option>
@@ -1608,7 +1613,8 @@
           <label>__MSG_config_runTestsParameters_label__<input id="runTestsParameters" type="text" size="30"></label></li>
       <li><a id="link-runBenchmark" target="_blank">__MSG_config_runBenchmark_label__</a>
         <ul>
-          <li><label class="has-checkbox"
+          <li class="firefox-only"
+             ><label class="has-checkbox"
                     ><input id="tabHidePermissionGranted"
                             type="checkbox">
                 __MSG_config_requestPermissions_tabHide__</label></li>

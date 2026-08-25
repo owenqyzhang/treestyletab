@@ -21,6 +21,10 @@ function log(...args) {
   internalLogger('sidebar/tab-group-context-menu', ...args);
 }
 
+// The in-content panel requires tabs.executeScript() with a code string,
+// which is unavailable on Chrome (MV3), so we always render in the sidebar there.
+const IS_CHROME = typeof chrome != 'undefined' && !!chrome.sidePanel;
+
 const TAB_GROUP_MENU_LABELS = Object.fromEntries(`
   tabGroupMenu_tab-group-editor-title-create
   tabGroupMenu_tab-group-editor-title-edit
@@ -67,13 +71,13 @@ const mController = new InContentPanelController({
     return configs.logFor['sidebar/tab-group-context-menu'] && configs.debug;
   },
   canRenderInSidebar() {
-    return !!(configs.tabGroupMenuPanelRenderIn & Constants.kIN_CONTENT_PANEL_RENDER_IN_SIDEBAR);
+    return IS_CHROME || !!(configs.tabGroupMenuPanelRenderIn & Constants.kIN_CONTENT_PANEL_RENDER_IN_SIDEBAR);
   },
   canRenderInContent() {
-    return !!(configs.tabGroupMenuPanelRenderIn & Constants.kIN_CONTENT_PANEL_RENDER_IN_CONTENT);
+    return !IS_CHROME && !!(configs.tabGroupMenuPanelRenderIn & Constants.kIN_CONTENT_PANEL_RENDER_IN_CONTENT);
   },
   shouldFallbackToSidebar() {
-    return !!(configs.tabGroupMenuPanelRenderIn & Constants.kIN_CONTENT_PANEL_RENDER_IN_SIDEBAR);
+    return IS_CHROME || !!(configs.tabGroupMenuPanelRenderIn & Constants.kIN_CONTENT_PANEL_RENDER_IN_SIDEBAR);
   },
   UIClass:         TabGroupMenuPanel,
   inSidebarUI:     mTabGroupMenuPanel,

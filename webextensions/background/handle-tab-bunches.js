@@ -33,6 +33,13 @@ function log(...args) {
   internalLogger('background/handle-tab-bunches', ...args);
 }
 
+// The `browser.tabs.insertAfterCurrent` workaround is for a Firefox
+// specific behavior, so it must not run on other browsers like Chrome.
+let mIsFirefox = false;
+browser.runtime.getBrowserInfo().then(browserInfo => {
+  mIsFirefox = browserInfo.name == 'Firefox';
+});
+
 // ====================================================================
 // Detection of a bunch of tabs opened at same time.
 // Firefox's WebExtensions API doesn't provide ability to know which tabs
@@ -116,7 +123,8 @@ async function tryDetectTabBunches(win) {
     }));
   }
 
-  if (areTabsFromOtherDeviceWithInsertAfterCurrent(tabReferences) &&
+  if (mIsFirefox &&
+      areTabsFromOtherDeviceWithInsertAfterCurrent(tabReferences) &&
       configs.fixupOrderOfTabsFromOtherDevice) {
     const ids   = tabReferences.map(tabReference => tabReference.id);
     const index = tabReferences.map(tabReference => Tab.get(tabReference.id).index).sort(compareAsNumber)[0];

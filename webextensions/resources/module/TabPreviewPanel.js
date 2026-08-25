@@ -360,7 +360,7 @@ export default class TabPreviewPanel extends InContentPanel {
   onUpdateUI({ targetId, title, url, contextualIdentity, tooltipHtml, hasPreview, previewURL, complete, scale, ...params }) {
     this.log(`${this.type} onUpdateUI `, { panel: this.panel, targetId, title, url, contextualIdentity, tooltipHtml, hasPreview, previewURL, ...params });
 
-    const hasLoadablePreviewURL = previewURL && /^((https?|moz-extension):|data:image\/[^,]+,.+)/.test(previewURL);
+    const hasLoadablePreviewURL = previewURL && /^((https?|moz-extension|chrome-extension):|data:image\/[^,]+,.+)/.test(previewURL);
     if (previewURL)
       hasPreview = hasLoadablePreviewURL;
 

@@ -925,8 +925,11 @@ async function updateTabbarDimensionsForTabBGImages(win) {
   style.setProperty('--browser-window-width', `${win.width}px`);
   style.setProperty('--browser-sidebar-width', `${window.innerWidth}px`);
   style.setProperty('--browser-sidebar-height', `${window.innerHeight}px`);
-  style.setProperty('--browser-sidebar-x-offset', `${window.mozInnerScreenX - win.left}px`);
-  style.setProperty('--browser-sidebar-y-offset', `${window.mozInnerScreenY - win.top}px`);
+  // mozInnerScreenX/Y are Firefox-only: fall back to screenX/Y on Chrome to avoid "NaNpx".
+  const innerScreenX = window.mozInnerScreenX ?? window.screenX;
+  const innerScreenY = window.mozInnerScreenY ?? window.screenY;
+  style.setProperty('--browser-sidebar-x-offset', `${innerScreenX - win.left}px`);
+  style.setProperty('--browser-sidebar-y-offset', `${innerScreenY - win.top}px`);
 
   if (shouldUpdateTabBGImages()) {
     for (const tab of document.querySelectorAll(`.sticky-tabs-container tab-item`)) {
@@ -1193,7 +1196,7 @@ async function isSidebarPositionInverted() {
     const notificationParams = {
       title:   browser.i18n.getMessage('sidebarPositionOptionNotification_title'),
       message: browser.i18n.getMessage('sidebarPositionOptionNotification_message'),
-      url:     `moz-extension://${window.location.host}/options/options.html#section-appearance`,
+      url:     browser.runtime.getURL('options/options.html#section-appearance'),
       timeout: configs.sidebarPositionOptionNotificationTimeout,
     };
     configs.sidebarPositionInvertedNotificationShown = true;
@@ -1300,6 +1303,27 @@ BackgroundConnection.onMessage.addListener(async message => {
   switch (message.type) {
     case Constants.kCOMMAND_NOTIFY_CONNECTION_READY:
       mConnectionOpenCount = message.openCount;
+      break;
+
+    // Chrome MV3: the background service worker has no Clipboard API, so
+    // clipboard writes (copy tab URLs etc.) are delegated to the sidebar.
+    case 'treestyletab:write-to-clipboard':
+      try {
+        if (message.richText &&
+            typeof ClipboardItem == 'function' &&
+            typeof navigator.clipboard?.write == 'function') {
+          await navigator.clipboard.write([new ClipboardItem({
+            'text/html':  new Blob([message.richText], { type: 'text/html' }),
+            'text/plain': new Blob([message.plainText || ''], { type: 'text/plain' }),
+          })]);
+        }
+        else {
+          await navigator.clipboard.writeText(message.plainText || '');
+        }
+      }
+      catch(error) {
+        console.error('failed to write to the clipboard: ', error);
+      }
       break;
 
     case Constants.kCOMMAND_BLOCK_USER_OPERATIONS:

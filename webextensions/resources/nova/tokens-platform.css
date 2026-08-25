@@ -56,9 +56,9 @@
     --popup-border-color: var(--border-color-deemphasized);
 
     /** sidebar **/
-    --sidebar-background-color: -moz-sidebar;
-    --sidebar-border-color: -moz-sidebarborder;
-    --sidebar-text-color: -moz-sidebartext;
+    --sidebar-background-color: Canvas;
+    --sidebar-border-color: color-mix(in srgb, CanvasText 20%, Canvas);
+    --sidebar-text-color: CanvasText;
 
     /** table **/
     --table-header-text-color: AccentColorText;
@@ -70,13 +70,13 @@
     --text-color-accent-primary-selected: SelectedItemText;
 
     /** toolbar **/
-    --toolbar-background-color: color-mix(in srgb, -moz-dialog 85%, var(--color-white));
+    --toolbar-background-color: color-mix(in srgb, Canvas 85%, var(--color-white));
     --toolbar-field-background-color: light-dark(rgba(0, 0, 0, 0.05), var(--color-black-alpha-30));
     --toolbar-field-background-color-focus: Field;
     --toolbar-field-border-color: var(--border-color-transparent);
     --toolbar-field-text-color: inherit;
     --toolbar-field-text-color-focus: FieldText;
-    --toolbar-text-color: -moz-dialogtext;
+    --toolbar-text-color: CanvasText;
 
     /** toolbarbutton **/
     --toolbarbutton-background-color-hover: var(--button-background-color-ghost-hover);
@@ -86,10 +86,10 @@
     --toolbarbutton-icon-fill-attention-text: AccentColorText;
 
     /** toolbox **/
-    --toolbox-background-color: -moz-headerbar;
-    --toolbox-background-color-inactive: -moz-headerbarinactive;
-    --toolbox-text-color: -moz-headerbartext;
-    --toolbox-text-color-inactive: -moz-headerbarinactivetext;
+    --toolbox-background-color: Canvas;
+    --toolbox-background-color-inactive: Canvas;
+    --toolbox-text-color: CanvasText;
+    --toolbox-text-color-inactive: CanvasText;
   }
 }
 
@@ -126,14 +126,14 @@
     --popup-border-color: var(--border-color-deemphasized);
 
     /** sidebar **/
-    --sidebar-border-color: -moz-sidebarborder;
+    --sidebar-border-color: color-mix(in srgb, CanvasText 20%, Canvas);
 
     /** text-color **/
     --text-color: currentColor;
     --text-color-accent-primary-selected: SelectedItemText;
 
     /** toolbar **/
-    --toolbar-background-color: color-mix(in srgb, -moz-dialog 85%, var(--color-white));
+    --toolbar-background-color: color-mix(in srgb, Canvas 85%, var(--color-white));
     --toolbar-field-background-color: light-dark(rgba(0, 0, 0, 0.05), var(--color-black-alpha-30));
     --toolbar-field-background-color-focus: Field;
     --toolbar-field-border-color: var(--border-color-transparent);
@@ -148,11 +148,11 @@
     --toolbarbutton-icon-fill-attention: AccentColor;
 
     /** toolbox **/
-    --toolbox-background-color: -moz-headerbar;
-    --toolbox-background-color-inactive: -moz-headerbarinactive;
+    --toolbox-background-color: Canvas;
+    --toolbox-background-color-inactive: Canvas;
     /* This gradient is only used for Nova */
     --toolbox-background-gradient: image(transparent);
-    --toolbox-text-color: -moz-headerbartext;
+    --toolbox-text-color: CanvasText;
   }
 }
 

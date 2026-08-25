@@ -5,6 +5,10 @@
 */
 'use strict';
 
+// must be imported first: installs the `browser` global on Chrome
+// (logs.html does not load it by itself)
+import '/common/browser-compat.js';
+
 import * as Constants from '/common/constants.js';
 
 window.addEventListener('DOMContentLoaded', () => {

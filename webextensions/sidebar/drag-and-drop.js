@@ -118,7 +118,8 @@ export function endMultiDrag(tab, coordinates) {
   if (mCapturingForDragging) {
     window.removeEventListener('mouseover', onTSTAPIDragEnter, { capture: true });
     window.removeEventListener('mouseout',  onTSTAPIDragExit, { capture: true });
-    document.releaseCapture();
+    if (document.releaseCapture) // Firefox-only
+      document.releaseCapture();
 
     TSTAPI.broadcastMessage({
       type:     TSTAPI.kNOTIFY_TAB_DRAGEND,
@@ -845,6 +846,17 @@ let mFinishCanceledDragOperation;
 let mCurrentDragDataForExternalsId = null;
 let mCurrentDragDataForExternals = null;
 
+// Chrome's protected drag data mode returns an empty string from
+// DataTransfer.getData() on dragend and has no mozUserCancelled, so we
+// record the drag intent and user-cancellation by ourselves at dragstart.
+let mDragDataHasURIList = false;
+let mDragWasCanceledByUser = false;
+
+function onKeyDownWhileDragging(event) {
+  if (event.key == 'Escape')
+    mDragWasCanceledByUser = true;
+}
+
 function onDragStart(event, options = {}) {
   log('onDragStart: start ', event, options);
   clearDraggingItemsState(); // clear previous state anyway
@@ -864,6 +876,8 @@ function onDragStart(event, options = {}) {
 
   mCurrentDragDataForExternalsId = `${parseInt(Math.random() * 65000)}-${Date.now()}`;
   mCurrentDragDataForExternals = {};
+  mDragDataHasURIList = false;
+  mDragWasCanceledByUser = false;
 
   const originalTarget = EventUtils.getElementOriginalTarget(event);
   const extraTabContentsDragData = JSON.parse(originalTarget?.dataset?.dragData || 'null');
@@ -915,6 +929,8 @@ function onDragStart(event, options = {}) {
           const type       = String(data.type);
           const stringData = String(data.data);
           dt.setData(type, stringData);
+          if (type == RetrieveURL.kTYPE_URI_LIST)
+            mDragDataHasURIList = true;
           //*** We need to sanitize drag data from helper addons, because
           //they can have sensitive data...
           //mCurrentDragDataForExternals[type] = stringData;
@@ -950,6 +966,7 @@ function onDragStart(event, options = {}) {
   const mousedown = EventUtils.getLastMousedown(event.button);
 
   if (mousedown &&
+      typeof window.mozInnerScreenY == 'number' && // Firefox-only guard, inert on other browsers
       mousedown.detail.lastInnerScreenY != window.mozInnerScreenY) {
     log('ignore accidental drag from updated visual gap');
     event.stopPropagation();
@@ -976,7 +993,8 @@ function onDragStart(event, options = {}) {
     }, { tabProperties: ['item', 'tab'] }).catch(_error => {});
     window.addEventListener('mouseover', onTSTAPIDragEnter, { capture: true });
     window.addEventListener('mouseout',  onTSTAPIDragExit, { capture: true });
-    document.body.setCapture(false);
+    if (document.body.setCapture) // Firefox-only: the window-level listeners above still work without capture
+      document.body.setCapture(false);
     mCapturingForDragging = true;
     return;
   }
@@ -991,6 +1009,10 @@ function onDragStart(event, options = {}) {
   }
 
   EventUtils.cancelHandleMousedown();
+
+  // Detect ESC-canceled drags by ourselves, for browsers without
+  // dataTransfer.mozUserCancelled.
+  window.addEventListener('keydown', onKeyDownWhileDragging, { capture: true });
 
   mDraggingOnSelfWindow = true;
   mDraggingOnDraggedItems = true;
@@ -1040,6 +1062,7 @@ function onDragStart(event, options = {}) {
       dt.setData(RetrieveURL.kTYPE_X_MOZ_URL, mCurrentDragDataForExternals[RetrieveURL.kTYPE_X_MOZ_URL]);
       log('set kTYPE_URI_LIST ', mCurrentDragDataForExternals[RetrieveURL.kTYPE_URI_LIST]);
       dt.setData(RetrieveURL.kTYPE_URI_LIST, mCurrentDragDataForExternals[RetrieveURL.kTYPE_URI_LIST]);
+      mDragDataHasURIList = true;
     }
   }
   {
@@ -1704,7 +1727,10 @@ async function onDragEnd(event) {
 
   let handledBySomeone = event.dataTransfer?.dropEffect != 'none';
 
-  if (event.dataTransfer?.getData(RetrieveURL.kTYPE_URI_LIST)) {
+  // DataTransfer.getData() returns an empty string on dragend in Chrome
+  // (protected mode), so we also check the intent recorded at dragstart.
+  if (event.dataTransfer?.getData(RetrieveURL.kTYPE_URI_LIST) ||
+      mDragDataHasURIList) {
     log('do nothing by TST for dropping just for bookmarking or linking');
     return;
   }
@@ -1730,6 +1756,7 @@ async function onDragEnd(event) {
   }
 
   if (event.dataTransfer?.mozUserCancelled ||
+      mDragWasCanceledByUser ||
       handledBySomeone) {
     log('dragged items are processed by someone: ', event.dataTransfer?.dropEffect);
     return;
@@ -1741,8 +1768,14 @@ async function onDragEnd(event) {
   }
 
   if (configs.ignoreTabDropNearSidebarArea) {
-    const windowX = window.mozInnerScreenX;
-    const windowY = window.mozInnerScreenY;
+    // mozInnerScreenX/Y are Firefox-only: on other browsers approximate the
+    // content area origin from the window position plus the chrome area size.
+    const windowX = typeof window.mozInnerScreenX == 'number' ?
+      window.mozInnerScreenX :
+      window.screenX + (window.outerWidth - window.innerWidth);
+    const windowY = typeof window.mozInnerScreenY == 'number' ?
+      window.mozInnerScreenY :
+      window.screenY + (window.outerHeight - window.innerHeight);
     const windowW = window.innerWidth;
     const windowH = window.innerHeight;
     const offset  = Scroll.getItemRect(dragData.item).height / 2;
@@ -1835,6 +1868,8 @@ onDragEnd = EventUtils.wrapWithErrorHandler(onDragEnd);
 
 function finishDrag(trigger) {
   log(`finishDrag from ${trigger || 'unknown'}`);
+
+  window.removeEventListener('keydown', onKeyDownWhileDragging, { capture: true });
 
   Notifications.remove('tab-drag-behavior-description');
 

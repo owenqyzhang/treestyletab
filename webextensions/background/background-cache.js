@@ -147,7 +147,9 @@ export async function restoreWindowFromEffectiveWindowCache(windowId, options = 
 }
 
 function getWindowSignature(tabs) {
-  return tabs.map(tab => `${tab.cookieStoreId},${tab.incognito},${tab.pinned},${tab.url}`);
+  // Chrome tabs may have no cookieStoreId (e.g. tabs from windows.getAll());
+  // fall back to the default value consistently to keep signatures comparable.
+  return tabs.map(tab => `${tab.cookieStoreId || 'firefox-default'},${tab.incognito},${tab.pinned},${tab.url}`);
 }
 
 function trimSignature(signature, ignoreCount) {
@@ -634,7 +636,7 @@ function onConfigChange(key) {
           }
           else {
             TabsInternalOperation.clearCache(owner);
-            window.location.reload();
+            browser.runtime.reload(); // window does not exist in the Chrome MV3 service worker
           }
         }
       }).catch(ApiTabs.createErrorSuppressor());

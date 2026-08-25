@@ -231,7 +231,9 @@ const mTabSeparator = {
   type:                'separator',
   contexts:            ['tab'],
   viewTypes:           ['sidebar'],
-  documentUrlPatterns: [`moz-extension://${window.location.host}/*`],
+  // `window` is unavailable in the service worker, and this must match
+  // both moz-extension: (Firefox) and chrome-extension: (Chrome) pages.
+  documentUrlPatterns: [`${browser.runtime.getURL('/')}*`],
   visible:             false,
   lastVisible:         false
 };
@@ -252,14 +254,18 @@ const mAllTabItems = [
   ...mGroupedTabItems
 ];
 
-function addTabItems() {
-  const promises = [];
+async function addTabItems() {
   if (addTabItems.done) {
+    // chrome.contextMenus remove/create are async and unordered, so we
+    // need to wait for removals before re-creating items with same ids.
+    const removePromises = [];
     for (const item of mAllTabItems) {
-      promises.push(browser.menus.remove(item.id));
+      removePromises.push(browser.menus.remove(item.id).catch(ApiTabs.createErrorSuppressor()));
     }
+    await Promise.all(removePromises);
   }
 
+  const promises = [];
   for (const item of mAllTabItems) {
     const params = getSafeCreateParams(item);
     promises.push(browser.menus.create(params));
@@ -312,7 +318,9 @@ const mBookmarkSeparator = {
   type:                'separator',
   contexts:            ['bookmark'],
   viewTypes:           ['sidebar'],
-  documentUrlPatterns: [`moz-extension://${window.location.host}/*`],
+  // `window` is unavailable in the service worker, and this must match
+  // both moz-extension: (Firefox) and chrome-extension: (Chrome) pages.
+  documentUrlPatterns: [`${browser.runtime.getURL('/')}*`],
   visible:             false,
   lastVisible:         false
 };
@@ -333,13 +341,18 @@ const mAllBookmarkItems = [
   ...mGroupedBookmarkItems
 ];
 
-function addBookmarkItems() {
-  const promises = [];
+async function addBookmarkItems() {
   if (addBookmarkItems.done) {
+    // chrome.contextMenus remove/create are async and unordered, so we
+    // need to wait for removals before re-creating items with same ids.
+    const removePromises = [];
     for (const item of mAllBookmarkItems) {
-      promises.push(browser.menus.remove(item.id));
+      removePromises.push(browser.menus.remove(item.id).catch(ApiTabs.createErrorSuppressor()));
     }
+    await Promise.all(removePromises);
   }
+
+  const promises = [];
   for (const item of mAllBookmarkItems) {
     promises.push(browser.menus.create(getSafeCreateParams(item)));
   }

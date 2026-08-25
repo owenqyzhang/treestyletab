@@ -20,6 +20,10 @@ function log(...args) {
 
 const delimiter = browser.i18n.getMessage('config_terms_delimiter');
 
+// Options for Firefox-only features (Firefox View, containers) should be
+// hidden on other browsers. Synchronously detectable via the internal URL.
+const IS_FIREFOX = browser.runtime.getURL('').startsWith('moz-extension:');
+
 function indent(level = 1) {
   return '\u00A0\u00A0\u00A0'.repeat(level);
 }
@@ -670,6 +674,7 @@ const mItems = [
       {
         title:    browser.i18n.getMessage('config_insertNewTabFromFirefoxViewAt_caption'),
         expert:   true,
+        visible:  IS_FIREFOX,
         children: [
           {
             title: browser.i18n.getMessage('config_insertNewTabFromFirefoxViewAt_noControl'),
@@ -699,14 +704,16 @@ const mItems = [
       },
       //{ type: 'separator' },
       {
-        title:  browser.i18n.getMessage('config_autoGroupNewTabsFromFirefoxView_label'),
-        key:    'autoGroupNewTabsFromFirefoxView',
-        type:   'checkbox',
-        expert: true,
+        title:   browser.i18n.getMessage('config_autoGroupNewTabsFromFirefoxView_label'),
+        key:     'autoGroupNewTabsFromFirefoxView',
+        type:    'checkbox',
+        expert:  true,
+        visible: IS_FIREFOX,
       },
       {
         title:    browser.i18n.getMessage('config_groupTabTemporaryStateForChildrenOfFirefoxView_label'),
         expert:   true,
+        visible:  IS_FIREFOX,
         children: [
           {
             title: browser.i18n.getMessage('config_groupTabTemporaryState_option_default'),
@@ -843,6 +850,7 @@ const mItems = [
       },
       {
         title:    indent() + browser.i18n.getMessage('config_inheritContextualIdentityToNewTabMode_label'),
+        visible:  IS_FIREFOX,
         children: [
           {
             title: browser.i18n.getMessage('config_inheritContextualIdentityToNewTabMode_default'),
@@ -1107,9 +1115,10 @@ const mItems = [
             value: Constants.kNEWTAB_OPEN_AS_NEXT_SIBLING,
             type:  'radio'
           },
-          { type: 'separator' },
+          { type: 'separator', visible: IS_FIREFOX },
           {
             title:    browser.i18n.getMessage('config_inheritContextualIdentityToSameSiteOrphanMode_label'),
+            visible:  IS_FIREFOX,
             children: [
               {
                 title: browser.i18n.getMessage('config_inheritContextualIdentityToSameSiteOrphanMode_default'),
@@ -1173,9 +1182,10 @@ const mItems = [
             value: Constants.kNEWTAB_OPEN_AS_NEXT_SIBLING,
             type:  'radio'
           },
-          { type: 'separator' },
+          { type: 'separator', visible: IS_FIREFOX },
           {
             title:    browser.i18n.getMessage('config_inheritContextualIdentityToTabsFromExternalMode_label'),
+            visible:  IS_FIREFOX,
             children: [
               {
                 title: browser.i18n.getMessage('config_inheritContextualIdentityToTabsFromExternalMode_default'),
@@ -1241,9 +1251,10 @@ const mItems = [
             value: Constants.kNEWTAB_OPEN_AS_NEXT_SIBLING,
             type:  'radio'
           },
-          { type: 'separator' },
+          { type: 'separator', visible: IS_FIREFOX },
           {
-            title: browser.i18n.getMessage('config_inheritContextualIdentityToTabsFromAnyOtherTriggerMode_label'),
+            title:   browser.i18n.getMessage('config_inheritContextualIdentityToTabsFromAnyOtherTriggerMode_label'),
+            visible: IS_FIREFOX,
             get enabled() {
               return configs.autoAttachOnAnyOtherTrigger != Constants.kNEWTAB_DO_NOTHING;
             },
@@ -2417,9 +2428,12 @@ const mItemsById = new Map();
 const mUpdatableItemsById = new Map();
 const mExpertItems = new Set();
 
-const MENU_CONTEXT = browser.browserAction ?
-  'browser_action' : // Manifest V2
-  'action'; // Manifest V3
+// Check "action" first: the Chrome compat shim aliases both
+// browser.action and browser.browserAction to chrome.action, and
+// Chrome accepts only the "action" context on Manifest V3.
+const MENU_CONTEXT = browser.action ?
+  'action' : // Manifest V3
+  'browser_action'; // Manifest V2
 
 function createItem(id, item, parent) {
   if (item.visible === false)
@@ -2447,7 +2461,9 @@ function createItem(id, item, parent) {
   if ('enabled' in item)
     params.enabled = item.enabled;
   log('create: ', params);
-  id = browser.menus.create(params);
+  // Don't use the return value of menus.create() here: we already know
+  // the id, and a promise-returning implementation would break child ids.
+  browser.menus.create(params);
   if (item.expert)
     mExpertItems.add(id);
   if (item.children) {
@@ -2458,15 +2474,12 @@ function createItem(id, item, parent) {
   }
 }
 
-if (browser.action/* Manifest V2 */ || browser.browserAction/* Manifest V3 */) {
+if (browser.action/* Manifest V3 */ || browser.browserAction/* Manifest V2 */) {
   for (let i = 0, maxi = mItems.length; i < maxi; i++) {
     createItem(`browserActionItem:${i}`, mItems[i]);
   }
 
-  browser.menus.onShown.addListener((info, _tab) => {
-    if (!info.contexts.includes(MENU_CONTEXT))
-      return;
-
+  function updateItems() {
     let updated = false;
     for (const item of mUpdatableItemsById.values()) {
       const params = {};
@@ -2503,7 +2516,35 @@ if (browser.action/* Manifest V2 */ || browser.browserAction/* Manifest V3 */) {
     }
     if (updated)
       browser.menus.refresh().catch(ApiTabs.createErrorSuppressor());
+  }
+
+  function reserveToUpdateItems() {
+    if (reserveToUpdateItems.reserved)
+      return;
+    reserveToUpdateItems.reserved = true;
+    setTimeout(() => {
+      reserveToUpdateItems.reserved = false;
+      updateItems();
+    }, 100);
+  }
+
+  // On Firefox we can update items just before the menu is shown.
+  browser.menus.onShown.addListener((info, _tab) => {
+    if (!info.contexts.includes(MENU_CONTEXT))
+      return;
+    updateItems();
   });
+
+  // On Chrome menus.onShown never fires, but item states updated eagerly
+  // here are reflected when the menu is opened next time.
+  configs.$addObserver(_key => {
+    reserveToUpdateItems();
+  });
+  if (browser.permissions.onAdded)
+    browser.permissions.onAdded.addListener(reserveToUpdateItems);
+  if (browser.permissions.onRemoved)
+    browser.permissions.onRemoved.addListener(reserveToUpdateItems);
+  configs.$loaded.then(updateItems);
 
   browser.menus.onClicked.addListener((info, _tab) => {
     const item = mItemsById.get(info.menuItemId);

@@ -309,29 +309,38 @@ function isResizable() {
   return !provider || !provider.subPanel || !('fixedHeight' in provider.subPanel);
 }
 
-mHeader.addEventListener('mousedown', event => {
+// Pointer Events instead of setCapture()/releaseCapture(), which are
+// Firefox-only and unavailable on Chrome.
+mHeader.addEventListener('pointerdown', event => {
   if (isFiredOnClickable(event))
     return;
   event.stopPropagation();
   event.preventDefault();
-  mHeader.setCapture(true);
+  mHeader.setPointerCapture(event.pointerId);
   mDragStartY = event.clientY;
   mDragStartHeight = mHeight;
-  mHeader.addEventListener('mousemove', onMouseMove);
+  mHeader.addEventListener('pointermove', onMouseMove);
 });
 
-mHeader.addEventListener('mouseup', event => {
+mHeader.addEventListener('pointerup', event => {
   if (isFiredOnClickable(event))
     return;
-  mHeader.removeEventListener('mousemove', onMouseMove);
+  mHeader.removeEventListener('pointermove', onMouseMove);
   event.stopPropagation();
   event.preventDefault();
-  document.releaseCapture();
+  if (mHeader.hasPointerCapture(event.pointerId))
+    mHeader.releasePointerCapture(event.pointerId);
   if (!isResizable())
     return;
   mHeight = mDragStartHeight - (event.clientY - mDragStartY);
   updateLayout();
   saveLastHeight();
+});
+
+mHeader.addEventListener('pointercancel', event => {
+  mHeader.removeEventListener('pointermove', onMouseMove);
+  if (mHeader.hasPointerCapture(event.pointerId))
+    mHeader.releasePointerCapture(event.pointerId);
 });
 
 mHeader.addEventListener('dblclick', async event => {
