@@ -1167,12 +1167,16 @@ class RichConfirmDialog {
     });
   }
 };
-window.RichConfirmDialog = RichConfirmDialog;
-window.RICH_CONFIRM_DIALOG_CLASS_NAME = 'RichConfirmDialog';
+// This module is also imported by the MV3 service worker (for its static
+// helpers); only wire up the dialog page behavior in DOM contexts.
+if (typeof window != 'undefined') {
+  window.RichConfirmDialog = RichConfirmDialog;
+  window.RICH_CONFIRM_DIALOG_CLASS_NAME = 'RichConfirmDialog';
 
-if (location.search.includes('__RichConfirm__')) {
-  window.addEventListener('DOMContentLoaded', () => {
-    window[window.RICH_CONFIRM_DIALOG_CLASS_NAME].onLoaded();
-  }, { once: true });
+  if (location.search.includes('__RichConfirm__')) {
+    window.addEventListener('DOMContentLoaded', () => {
+      window[window.RICH_CONFIRM_DIALOG_CLASS_NAME].onLoaded();
+    }, { once: true });
+  }
 }
 export default RichConfirmDialog;

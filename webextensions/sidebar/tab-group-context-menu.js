@@ -26,40 +26,40 @@ function log(...args) {
 const IS_CHROME = typeof chrome != 'undefined' && !!chrome.sidePanel;
 
 const TAB_GROUP_MENU_LABELS = Object.fromEntries(`
-  tabGroupMenu_tab-group-editor-title-create
-  tabGroupMenu_tab-group-editor-title-edit
-  tabGroupMenu_tab-group-editor-name-label
-  tabGroupMenu_tab-group-editor-name-field_placeholder
-  tabGroupMenu_tab-group-editor-cancel_label
-  tabGroupMenu_tab-group-editor-cancel_accesskey
-  tabGroupMenu_tab-group-editor-color-selector_aria-label
-  tabGroupMenu_tab-group-editor-color-selector2-blue
-  tabGroupMenu_tab-group-editor-color-selector2-blue_title
-  tabGroupMenu_tab-group-editor-color-selector2-purple
-  tabGroupMenu_tab-group-editor-color-selector2-purple_title
-  tabGroupMenu_tab-group-editor-color-selector2-cyan
-  tabGroupMenu_tab-group-editor-color-selector2-cyan_title
-  tabGroupMenu_tab-group-editor-color-selector2-orange
-  tabGroupMenu_tab-group-editor-color-selector2-orange_title
-  tabGroupMenu_tab-group-editor-color-selector2-yellow
-  tabGroupMenu_tab-group-editor-color-selector2-yellow_title
-  tabGroupMenu_tab-group-editor-color-selector2-pink
-  tabGroupMenu_tab-group-editor-color-selector2-pink_title
-  tabGroupMenu_tab-group-editor-color-selector2-green
-  tabGroupMenu_tab-group-editor-color-selector2-green_title
-  tabGroupMenu_tab-group-editor-color-selector2-gray
-  tabGroupMenu_tab-group-editor-color-selector2-gray_title
-  tabGroupMenu_tab-group-editor-color-selector2-red
-  tabGroupMenu_tab-group-editor-color-selector2-red_title
-  tabGroupMenu_tab-group-editor-action-new-tab_label
-  tabGroupMenu_tab-group-editor-action-new-window_label
-  tabGroupMenu_tab-group-editor-action-copy-link_label
-  tabGroupMenu_tab-group-editor-action-copy-links_label
-  tabGroupMenu_tab-group-editor-action-save_label
-  tabGroupMenu_tab-group-editor-action-ungroup_label
-  tabGroupMenu_tab-group-editor-action-delete_label
-  tabGroupMenu_tab-group-editor-done_label
-  tabGroupMenu_tab-group-editor-done_accesskey
+  tabGroupMenu_tab_group_editor_title_create
+  tabGroupMenu_tab_group_editor_title_edit
+  tabGroupMenu_tab_group_editor_name_label
+  tabGroupMenu_tab_group_editor_name_field_placeholder
+  tabGroupMenu_tab_group_editor_cancel_label
+  tabGroupMenu_tab_group_editor_cancel_accesskey
+  tabGroupMenu_tab_group_editor_color_selector_aria_label
+  tabGroupMenu_tab_group_editor_color_selector2_blue
+  tabGroupMenu_tab_group_editor_color_selector2_blue_title
+  tabGroupMenu_tab_group_editor_color_selector2_purple
+  tabGroupMenu_tab_group_editor_color_selector2_purple_title
+  tabGroupMenu_tab_group_editor_color_selector2_cyan
+  tabGroupMenu_tab_group_editor_color_selector2_cyan_title
+  tabGroupMenu_tab_group_editor_color_selector2_orange
+  tabGroupMenu_tab_group_editor_color_selector2_orange_title
+  tabGroupMenu_tab_group_editor_color_selector2_yellow
+  tabGroupMenu_tab_group_editor_color_selector2_yellow_title
+  tabGroupMenu_tab_group_editor_color_selector2_pink
+  tabGroupMenu_tab_group_editor_color_selector2_pink_title
+  tabGroupMenu_tab_group_editor_color_selector2_green
+  tabGroupMenu_tab_group_editor_color_selector2_green_title
+  tabGroupMenu_tab_group_editor_color_selector2_gray
+  tabGroupMenu_tab_group_editor_color_selector2_gray_title
+  tabGroupMenu_tab_group_editor_color_selector2_red
+  tabGroupMenu_tab_group_editor_color_selector2_red_title
+  tabGroupMenu_tab_group_editor_action_new_tab_label
+  tabGroupMenu_tab_group_editor_action_new_window_label
+  tabGroupMenu_tab_group_editor_action_copy_link_label
+  tabGroupMenu_tab_group_editor_action_copy_links_label
+  tabGroupMenu_tab_group_editor_action_save_label
+  tabGroupMenu_tab_group_editor_action_ungroup_label
+  tabGroupMenu_tab_group_editor_action_delete_label
+  tabGroupMenu_tab_group_editor_done_label
+  tabGroupMenu_tab_group_editor_done_accesskey
 `.trim().split(/\s+/).map(key => [key.replace(/-/g, '_'), browser.i18n.getMessage(key)]));
 const TAB_GROUP_MENU_LABELS_CODE = JSON.stringify(TAB_GROUP_MENU_LABELS);
 

@@ -6,6 +6,11 @@
 'use strict';
 
 import RichConfirm from '/extlib/RichConfirm.js';
+import CrossContextMessaging from '/extlib/cross-context-messaging-bg.js';
+
+// Expose for common/tst-api.js: dynamic import() is disallowed in the
+// MV3 service worker, and this module must only load in the background.
+globalThis.__treestyletabCrossContextMessaging = CrossContextMessaging;
 
 import {
   log,

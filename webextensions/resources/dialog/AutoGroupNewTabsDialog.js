@@ -88,7 +88,10 @@ class AutoGroupNewTabsDialog extends RichConfirmDialog {
     }
   }
 };
+// Guarded: this module may be imported by the MV3 service worker.
+if (typeof window != 'undefined') {
 window.AutoGroupNewTabsDialog = AutoGroupNewTabsDialog;
 window.RICH_CONFIRM_DIALOG_CLASS_NAME = 'AutoGroupNewTabsDialog';
+}
 
 export default AutoGroupNewTabsDialog;

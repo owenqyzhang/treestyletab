@@ -106,17 +106,27 @@
   "tab_tree_tooltip": {
     "message": "$TREE$\n  ...і $COUNT$ більше вкладок(ки)",
     "placeholders": {
-      "tree": { "content": "$1", "example": "* Tree\n  * Style\n    * Tab" },
-      "count": { "content": "$2", "example": "3" }
+      "tree": {
+        "content": "$1",
+        "example": "* Tree\n  * Style\n    * Tab"
+      },
+      "count": {
+        "content": "$2",
+        "example": "3"
+      }
     },
     "hash": "f7d2172e715235f06bcb735d83461315"
   },
-  "tabbar_newTabButton_label":   { "message": "Нова вкладка" },
+  "tabbar_newTabButton_label": {
+    "message": "Нова вкладка"
+  },
   "tabbar_newTabButton_tooltip": {
     "message": "Відкрити нову вкладку",
     "hash": "cdeaa496e27f481f501b51c5f07478f9"
   },
-  "tabbar_newTabButton_tooltip_container": { "message": "\nНатисніть і утримуйте, щоб відкрити нову вкладку в контейнері" },
+  "tabbar_newTabButton_tooltip_container": {
+    "message": "\nНатисніть і утримуйте, щоб відкрити нову вкладку в контейнері"
+  },
   "tabbar_newTabAction_tooltip": {
     "message": "Відкрити нову вкладку як…",
     "hash": "4595cbc84085b40156711bb0df0f0ab8"
@@ -164,7 +174,10 @@
   "groupTab_label": {
     "message": "$TITLE$ і більше",
     "placeholders": {
-      "title": { "content": "$1", "example": "title" }
+      "title": {
+        "content": "$1",
+        "example": "title"
+      }
     },
     "hash": "631f9993dc81eb82f381ffff8c531551"
   },
@@ -179,14 +192,20 @@
   "groupTab_fromPinnedTab_label": {
     "message": "Вкладки з $TITLE$",
     "placeholders": {
-      "title": { "content": "$1", "example": "title" }
+      "title": {
+        "content": "$1",
+        "example": "title"
+      }
     },
     "hash": "4bfbdd0d863b718a743bf1b3e168195c"
   },
   "bookmarkFolder_label_default": {
     "message": "%ANY(\"%GROUP%\", \"$TITLE$ і більше\")% (%YEAR%.%MONTH%.%DATE%)",
     "placeholders": {
-      "title": { "content": "$1", "example": "Title" }
+      "title": {
+        "content": "$1",
+        "example": "Title"
+      }
     },
     "hash": "a5f63f9ef1cf2cf7d989bc0bb3b37100"
   },
@@ -221,7 +240,10 @@
   "warnOnCloseTabs_message": {
     "message": "Ви намагаєтеся закрити $NUMBER$ вкладки(ок). Впевнені, що бажаєте продовжити?",
     "placeholders": {
-      "NUMBER": { "content": "$1", "example": "10" }
+      "NUMBER": {
+        "content": "$1",
+        "example": "10"
+      }
     },
     "hash": "e3c228fe083b75f07a680e0f2b8cdcfb"
   },
@@ -232,7 +254,10 @@
   "warnOnCloseTabs_message_short": {
     "message": "Закрити $NUMBER$ вкладок?",
     "placeholders": {
-      "NUMBER": { "content": "$1", "example": "10" }
+      "NUMBER": {
+        "content": "$1",
+        "example": "10"
+      }
     }
   },
   "warnOnCloseTabs_warnAgain_short": {
@@ -317,20 +342,31 @@
   "sentTabs_notification_message": {
     "message": "Вкладки надіслано на $DEVICE$",
     "placeholders": {
-      "DEVICE": { "content": "$1", "example": "Firefox on Device X" }
+      "DEVICE": {
+        "content": "$1",
+        "example": "Firefox on Device X"
+      }
     },
     "hash": "270c36d9e8def4a6b6582a47d190e4cf"
   },
   "sentTabs_notification_message_multiple": {
     "message": "Вкладки надіслано на $DEVICE$",
     "placeholders": {
-      "DEVICE": { "content": "$1", "example": "Firefox on Device X" }
+      "DEVICE": {
+        "content": "$1",
+        "example": "Firefox on Device X"
+      }
     },
     "hash": "3927d1be6613b44761cc47c8f7c94c18"
   },
   "sentTabsToAllDevices_notification_message": {
     "message": "Вкладку надіслано на $DEVICE$",
-    "hash": "b2cbf13000adec5e9ead34ecb0329107"
+    "hash": "b2cbf13000adec5e9ead34ecb0329107",
+    "placeholders": {
+      "DEVICE": {
+        "content": "$1"
+      }
+    }
   },
   "sentTabsToAllDevices_notification_message_multiple": {
     "message": "Вкладку надіслано на всі пристрої ",
@@ -339,21 +375,30 @@
   "receiveTabs_notification_title": {
     "message": "Вкладка з $DEVICE$",
     "placeholders": {
-      "DEVICE": { "content": "$1", "example": "Firefox on Device X" }
+      "DEVICE": {
+        "content": "$1",
+        "example": "Firefox on Device X"
+      }
     },
     "hash": "44891cb410ee7245326c7fdfd591fcb1"
   },
   "receiveTabs_notification_message": {
     "message": "$URL$",
     "placeholders": {
-      "URL": { "content": "$1", "example": "http://example.com/" }
+      "URL": {
+        "content": "$1",
+        "example": "http://example.com/"
+      }
     },
     "hash": "2f907304959eb1856d8a6037fdc0086a"
   },
   "receiveTabs_notification_title_multiple": {
     "message": "Вкладки з $DEVICE$",
     "placeholders": {
-      "DEVICE": { "content": "$1", "example": "Firefox on Device X" }
+      "DEVICE": {
+        "content": "$1",
+        "example": "Firefox on Device X"
+      }
     },
     "hash": "19a18fafaea7da009dbfaafe117edf2a"
   },
@@ -818,7 +863,7 @@
     "hash": "cb1e8ee431dcf1087099758e3a26c0ff"
   },
   "config_longPressOnNewTabButton_after": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "config_showNewTabActionSelector_label": {
@@ -862,7 +907,7 @@
     "hash": "cceaa50512a93c462dfe0e6e2361b6d8"
   },
   "config_autoAttachOnNewTabCommand_after": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "config_guessNewOrphanTabAsOpenedByNewTabCommandTitle_before": {
@@ -906,7 +951,7 @@
     "hash": "cceaa50512a93c462dfe0e6e2361b6d8"
   },
   "config_autoAttachOnNewTabButtonMiddleClick_after": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "config_autoAttachOnDuplicated_independent": {
@@ -922,7 +967,7 @@
     "hash": "cceaa50512a93c462dfe0e6e2361b6d8"
   },
   "config_autoAttachOnDuplicated_after": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "config_autoAttachOnOpenedFromExternal_before": {
@@ -942,7 +987,7 @@
     "hash": "cceaa50512a93c462dfe0e6e2361b6d8"
   },
   "config_autoAttachOnOpenedFromExternal_after": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "config_autoAttachSameSiteOrphan_before": {
@@ -962,7 +1007,7 @@
     "hash": "cceaa50512a93c462dfe0e6e2361b6d8"
   },
   "config_autoAttachSameSiteOrphan_after": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "config_autoAttachOnAnyOtherTrigger_before": {
@@ -982,7 +1027,7 @@
     "hash": "cceaa50512a93c462dfe0e6e2361b6d8"
   },
   "config_autoAttachOnAnyOtherTrigger_after": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "config_tabBunchesDetectionDelayOnNewWindow_before": {
@@ -1461,136 +1506,138 @@
     "message": "За&крити %S вкладок",
     "hash": "4b390c9abd8ac915b722d04f8555ce30"
   },
-  "tabGroupMenu_tab-group-editor-title-create": {
+  "tabGroupMenu_tab_group_editor_title_create": {
     "message": "Створити групу вкладок",
     "hash": "f131292925a0864a118d05a7864345bb"
   },
-  "tabGroupMenu_tab-group-editor-title-edit": {
+  "tabGroupMenu_tab_group_editor_title_edit": {
     "message": "Керувати групою вкладок",
     "hash": "18f9c2c8d319b19a95cf264f6e4572b9"
   },
-  "tabGroupMenu_tab-group-editor-name-label": {
+  "tabGroupMenu_tab_group_editor_name_label": {
     "message": "Назва",
     "hash": "ea749f1f2741f75bc9964303625ad41f"
   },
-  "tabGroupMenu_tab-group-editor-name-field_placeholder": {
+  "tabGroupMenu_tab_group_editor_name_field_placeholder": {
     "message": "Наприклад: покупки",
     "hash": "98a50356ad574b219001baad0d362c0b"
   },
-  "tabGroupMenu_tab-group-editor-cancel_label": {
+  "tabGroupMenu_tab_group_editor_cancel_label": {
     "message": "Скасувати",
     "hash": "17aa19f18a894459ab6ff21156e8a341"
   },
-  "tabGroupMenu_tab-group-editor-cancel_accesskey": {
+  "tabGroupMenu_tab_group_editor_cancel_accesskey": {
     "message": "С",
     "hash": "875f558abc952c3678ab1064cb2acd77"
   },
-  "tabGroupMenu_tab-group-editor-color-selector_aria-label": {
+  "tabGroupMenu_tab_group_editor_color_selector_aria_label": {
     "message": "Колір групи вкладок",
     "hash": "bea8a63743ad0206f446b6d15cc25a87"
   },
-  "tabGroupMenu_tab-group-editor-color-selector2-blue": {
+  "tabGroupMenu_tab_group_editor_color_selector2_blue": {
     "message": "Блакитний",
     "hash": "4e7b29d4e9b1d5e1572858d4a8809a81"
   },
-  "tabGroupMenu_tab-group-editor-color-selector2-blue_title": {
+  "tabGroupMenu_tab_group_editor_color_selector2_blue_title": {
     "message": "Блакитний",
     "hash": "4e7b29d4e9b1d5e1572858d4a8809a81"
   },
-  "tabGroupMenu_tab-group-editor-color-selector2-purple": {
+  "tabGroupMenu_tab_group_editor_color_selector2_purple": {
     "message": "Бузковий",
     "hash": "94aa37d50f782c613f1d18c97e69eb64"
   },
-  "tabGroupMenu_tab-group-editor-color-selector2-purple_title": {
+  "tabGroupMenu_tab_group_editor_color_selector2_purple_title": {
     "message": "Бузковий",
     "hash": "94aa37d50f782c613f1d18c97e69eb64"
   },
-  "tabGroupMenu_tab-group-editor-color-selector2-cyan": {
+  "tabGroupMenu_tab_group_editor_color_selector2_cyan": {
     "message": "Бірюзовий",
     "hash": "dca454e82c887e6e995c19a4cbf5a03c"
   },
-  "tabGroupMenu_tab-group-editor-color-selector2-cyan_title": {
+  "tabGroupMenu_tab_group_editor_color_selector2_cyan_title": {
     "message": "Бірюзовий",
     "hash": "dca454e82c887e6e995c19a4cbf5a03c"
   },
-  "tabGroupMenu_tab-group-editor-color-selector2-orange": {
+  "tabGroupMenu_tab_group_editor_color_selector2_orange": {
     "message": "Помаранчевий",
     "hash": "f87e379145ed480906b33a392375b60d"
   },
-  "tabGroupMenu_tab-group-editor-color-selector2-orange_title": {
+  "tabGroupMenu_tab_group_editor_color_selector2_orange_title": {
     "message": "Помаранчевий",
     "hash": "f87e379145ed480906b33a392375b60d"
   },
-  "tabGroupMenu_tab-group-editor-color-selector2-yellow": {
+  "tabGroupMenu_tab_group_editor_color_selector2_yellow": {
     "message": "Жовтий",
     "hash": "6ed1565e011876e594069a998f6fab8c"
   },
-  "tabGroupMenu_tab-group-editor-color-selector2-yellow_title": {
+  "tabGroupMenu_tab_group_editor_color_selector2_yellow_title": {
     "message": "Жовтий",
     "hash": "6ed1565e011876e594069a998f6fab8c"
   },
-  "tabGroupMenu_tab-group-editor-color-selector2-pink": {
+  "tabGroupMenu_tab_group_editor_color_selector2_pink": {
     "message": "Рожевий",
     "hash": "f52ac88259c57d3c45a26f57469bc202"
   },
-  "tabGroupMenu_tab-group-editor-color-selector2-pink_title": {
+  "tabGroupMenu_tab_group_editor_color_selector2_pink_title": {
     "message": "Рожевий",
     "hash": "f52ac88259c57d3c45a26f57469bc202"
   },
-  "tabGroupMenu_tab-group-editor-color-selector2-green": {
+  "tabGroupMenu_tab_group_editor_color_selector2_green": {
     "message": "Зелений",
     "hash": "f9d0d63c424e30a21147a255dadb9561"
   },
-  "tabGroupMenu_tab-group-editor-color-selector2-green_title": {
+  "tabGroupMenu_tab_group_editor_color_selector2_green_title": {
     "message": "Зелений",
     "hash": "f9d0d63c424e30a21147a255dadb9561"
   },
-  "tabGroupMenu_tab-group-editor-color-selector2-gray": {
+  "tabGroupMenu_tab_group_editor_color_selector2_gray": {
     "message": "Сірий",
     "hash": "99120a99c4fd2db689b08297d7b255c4"
   },
-  "tabGroupMenu_tab-group-editor-color-selector2-gray_title": {
+  "tabGroupMenu_tab_group_editor_color_selector2_gray_title": {
     "message": "Сірий",
     "hash": "99120a99c4fd2db689b08297d7b255c4"
   },
-  "tabGroupMenu_tab-group-editor-color-selector2-red": {
+  "tabGroupMenu_tab_group_editor_color_selector2_red": {
     "message": "Червоний",
     "hash": "a6d84b48d97f79fe1ada59cc8fa33253"
   },
-  "tabGroupMenu_tab-group-editor-color-selector2-red_title": {
+  "tabGroupMenu_tab_group_editor_color_selector2_red_title": {
     "message": "Червоний",
     "hash": "a6d84b48d97f79fe1ada59cc8fa33253"
   },
-  "tabGroupMenu_tab-group-editor-action-new-tab_label": {
+  "tabGroupMenu_tab_group_editor_action_new_tab_label": {
     "message": "Нова вкладка в групі",
     "hash": "02029ca7591e7bb55c124bab4f40746f"
   },
-  "tabGroupMenu_tab-group-editor-action-new-window_label": {
+  "tabGroupMenu_tab_group_editor_action_new_window_label": {
     "message": "Перемістити групу в нове вікно",
     "hash": "2ac26213081383cc9df57ab6c5a31fb9"
   },
-  "tabGroupMenu_tab-group-editor-action-save_label": {
+  "tabGroupMenu_tab_group_editor_action_save_label": {
     "message": "Зберегти й закрити групу",
     "hash": "067cdcb3589a5c759f124afafd35d1f0"
   },
-  "tabGroupMenu_tab-group-editor-action-ungroup_label": {
+  "tabGroupMenu_tab_group_editor_action_ungroup_label": {
     "message": "Розгрупувати вкладки",
     "hash": "3c64e0d7cddd370df5d9397845f984e7"
   },
-  "tabGroupMenu_tab-group-editor-action-delete_label": {
+  "tabGroupMenu_tab_group_editor_action_delete_label": {
     "message": "Видалити групу",
     "hash": "2f8d88d12d4708682ea9b43cad39cad9"
   },
-  "tabGroupMenu_tab-group-editor-done_label": {
+  "tabGroupMenu_tab_group_editor_done_label": {
     "message": "Виконано",
     "hash": "606a433d8fc5c441292647ef689a4689"
   },
-  "tabGroupMenu_tab-group-editor-done_accesskey": {
+  "tabGroupMenu_tab_group_editor_done_accesskey": {
     "message": "и",
     "hash": "7b5cc0df2650200ed4924f7958607b73"
   },
-
-  "dropToPinDescription": { "message": "Перетягніть вкладку сюди, щоб закріпити" },
-
-  "__WET_LOCALE__": { "message": "uk" }
+  "dropToPinDescription": {
+    "message": "Перетягніть вкладку сюди, щоб закріпити"
+  },
+  "__WET_LOCALE__": {
+    "message": "uk"
+  }
 }

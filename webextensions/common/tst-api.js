@@ -568,7 +568,12 @@ export async function initAsBackend() {
 
   const respondedAddons = [];
   const notifiedAddons = {};
-  const notifyAddons = configs.knownExternalAddons.concat(configs.cachedExternalAddons);
+  // Chrome extension ids are 32 lowercase letters; Firefox-style ids
+  // (foo@example.com) make Chrome's sendMessage throw synchronously.
+  const isValidLocalAddonId = typeof window == 'undefined' || /Chrome\//.test(navigator.userAgent) ?
+    id => /^[a-p]{32}$/.test(id) :
+    _id => true;
+  const notifyAddons = configs.knownExternalAddons.concat(configs.cachedExternalAddons).filter(isValidLocalAddonId);
   log('initAsBackend: notifyAddons = ', notifyAddons);
   await Promise.all(notifyAddons.map(async id => {
     if (id in notifiedAddons)
@@ -760,11 +765,22 @@ if (Constants.IS_BACKGROUND) {
   }
   browser.runtime.onMessage.addListener(onInternalMessage);
 
-  import('/extlib/cross-context-messaging-bg.js').then(({ default: CrossContextMessaging }) => {
-    CrossContextMessaging.onMessage((message, sender) => {
+  // Dynamic import() is disallowed in the MV3 service worker, so the
+  // background entry point (background/index.js) statically imports the
+  // module and exposes it here before init runs.
+  const staticCrossContextMessaging = globalThis.__treestyletabCrossContextMessaging;
+  if (staticCrossContextMessaging) {
+    staticCrossContextMessaging.onMessage((message, sender) => {
       return onInternalMessage(message, sender);
     });
-  });
+  }
+  else if (typeof window != 'undefined') {
+    import('/extlib/cross-context-messaging-bg.js').then(({ default: CrossContextMessaging }) => {
+      CrossContextMessaging.onMessage((message, sender) => {
+        return onInternalMessage(message, sender);
+      });
+    });
+  }
 }
 
 const mPromisedOnBeforeUnload = new Promise((resolve, _reject) => {

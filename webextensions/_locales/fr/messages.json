@@ -146,17 +146,27 @@
   "tab_tree_tooltip": {
     "message": "$TREE$\n  ...et $COUNT$ plus d'onglet(s)",
     "placeholders": {
-      "tree": { "content": "$1", "example": "* Tree\n  * Style\n    * Tab" },
-      "count": { "content": "$2", "example": "3" }
+      "tree": {
+        "content": "$1",
+        "example": "* Tree\n  * Style\n    * Tab"
+      },
+      "count": {
+        "content": "$2",
+        "example": "3"
+      }
     },
     "hash": "f7d2172e715235f06bcb735d83461315"
   },
-  "tabbar_newTabButton_label":   { "message": "Nouvel onglet" },
+  "tabbar_newTabButton_label": {
+    "message": "Nouvel onglet"
+  },
   "tabbar_newTabButton_tooltip": {
     "message": "Ouvrir un nouvel onglet",
     "hash": "cdeaa496e27f481f501b51c5f07478f9"
   },
-  "tabbar_newTabButton_tooltip_container": { "message": "\nEffectuer un appui long pour ouvrir un nouvel onglet conteneur" },
+  "tabbar_newTabButton_tooltip_container": {
+    "message": "\nEffectuer un appui long pour ouvrir un nouvel onglet conteneur"
+  },
   "tabbar_newTabAction_tooltip": {
     "message": "Ouvrir un nouvel onglet comme…",
     "hash": "4595cbc84085b40156711bb0df0f0ab8"
@@ -204,7 +214,10 @@
   "groupTab_label": {
     "message": "$TITLE$ et plus",
     "placeholders": {
-      "title": { "content": "$1", "example": "title" }
+      "title": {
+        "content": "$1",
+        "example": "title"
+      }
     },
     "hash": "631f9993dc81eb82f381ffff8c531551"
   },
@@ -223,7 +236,10 @@
   "groupTab_fromPinnedTab_label": {
     "message": "Tabs from $TITLE$",
     "placeholders": {
-      "title": { "content": "$1", "example": "title" }
+      "title": {
+        "content": "$1",
+        "example": "title"
+      }
     },
     "hash": "4bfbdd0d863b718a743bf1b3e168195c"
   },
@@ -238,7 +254,10 @@
   "bookmarkFolder_label_default": {
     "message": "%ANY(\"%GROUP%\", \"$TITLE$ et plus\")% (%YEAR%.%MONTH%.%DATE%)",
     "placeholders": {
-      "title": { "content": "$1", "example": "Title" }
+      "title": {
+        "content": "$1",
+        "example": "Title"
+      }
     },
     "hash": "b40bb671bfdc9d5b864f508435a929f0"
   },
@@ -277,21 +296,30 @@
   "tabDragBehaviorNotification_message_base": {
     "message": "Glisser en dehors du panneau latéral va $RESULT$.",
     "placeholders": {
-      "result": { "content": "$1", "example": "something happen" }
+      "result": {
+        "content": "$1",
+        "example": "something happen"
+      }
     },
     "hash": "e443023e41d97ba6dd508cf8d86d289e"
   },
   "tabDragBehaviorNotification_message_inverted_base_with_shift": {
     "message": "Maj-glissé va $RESULT$.",
     "placeholders": {
-      "result": { "content": "$1", "example": "something happen" }
+      "result": {
+        "content": "$1",
+        "example": "something happen"
+      }
     },
     "hash": "9e3f61f9cf4a6d781ea256425f797dd6"
   },
   "tabDragBehaviorNotification_message_inverted_base_without_shift": {
     "message": "Glisser sans la touche Maj va $RESULT$.",
     "placeholders": {
-      "result": { "content": "$1", "example": "something happen" }
+      "result": {
+        "content": "$1",
+        "example": "something happen"
+      }
     },
     "hash": "ee6d9fcb223a49c66d4d44023ffe10a7"
   },
@@ -311,11 +339,16 @@
     "message": "créer un lien ou un marque-page à l'endroit où l'onglet est déposé",
     "hash": "80989b319537e780ba90b6b5e6053085"
   },
-  "dropToPinDescription": { "message": "Déposez un onglet ici pour l’épingler" },
+  "dropToPinDescription": {
+    "message": "Déposez un onglet ici pour l’épingler"
+  },
   "warnOnCloseTabs_message": {
     "message": "Vous êtes sur le point de fermer $NUMBER$ onglets. Voulez-vous vraiment continuer ?",
     "placeholders": {
-      "NUMBER": { "content": "$1", "example": "10" }
+      "NUMBER": {
+        "content": "$1",
+        "example": "10"
+      }
     },
     "hash": "e3c228fe083b75f07a680e0f2b8cdcfb"
   },
@@ -326,7 +359,10 @@
   "warnOnCloseTabs_message_short": {
     "message": "Fermer $NUMBER$ onglets ?",
     "placeholders": {
-      "NUMBER": { "content": "$1", "example": "10" }
+      "NUMBER": {
+        "content": "$1",
+        "example": "10"
+      }
     }
   },
   "warnOnCloseTabs_warnAgain_short": {
@@ -343,7 +379,10 @@
   "warnOnAutoGroupNewTabs_message": {
     "message": "$NUMBER$ tabs are opened in a time. Do you want them to be grouped in a tree?",
     "placeholders": {
-      "NUMBER": { "content": "$1", "example": "10" }
+      "NUMBER": {
+        "content": "$1",
+        "example": "10"
+      }
     },
     "hash": "1166af124a483e11003079ef324faab7"
   },
@@ -411,16 +450,36 @@
     "message": "⚠Quelques fonctionnalités requièrent des permissions supplémentaires. Si vous voulez les utiliser, acceptez les permissions manuellement.",
     "hash": "579d612ed89439363c1b15dc629175bc"
   },
-  "message_startup_requestPermissions_bookmarks": { "message": "l'accès aux marque-pages" },
-  "message_startup_requestPermissions_bookmarks_contextMenuItems": { "message": "« Ajouter cet arbre aux marque-pages » dans le menu contextuel sur les onglets" },
-  "_message_startup_requestPermissions_bookmarks_migrationForImportedBookmarks": { "message": "" },
-  "_message_startup_requestPermissions_bookmarks_detectTabsFromBookmarks": { "message": "" },
-  "_message_startup_requestPermissions_allUrls":   { "message": "" },
-  "_message_startup_requestPermissions_allUrls_tabPreviewPanel":   { "message": "" },
-  "message_startup_requestPermissions_allUrls_skipCollapsedTabsWithCtrlTab":   { "message": "Ne pas déplier les arbres repliés et ignorer les descendants repliés lorsque vous changez d'onglet courant via des raccourcis claviers" },
-  "_message_startup_requestPermissions_allUrls_preventBlankDialogRestoration":   { "message": "" },
-  "_message_startup_requestPermissions_clipboardRead": { "message": "" },
-  "_message_startup_requestPermissions_clipboardRead_newTabButtonMiddleClick": { "message": "" },
+  "message_startup_requestPermissions_bookmarks": {
+    "message": "l'accès aux marque-pages"
+  },
+  "message_startup_requestPermissions_bookmarks_contextMenuItems": {
+    "message": "« Ajouter cet arbre aux marque-pages » dans le menu contextuel sur les onglets"
+  },
+  "_message_startup_requestPermissions_bookmarks_migrationForImportedBookmarks": {
+    "message": ""
+  },
+  "_message_startup_requestPermissions_bookmarks_detectTabsFromBookmarks": {
+    "message": ""
+  },
+  "_message_startup_requestPermissions_allUrls": {
+    "message": ""
+  },
+  "_message_startup_requestPermissions_allUrls_tabPreviewPanel": {
+    "message": ""
+  },
+  "message_startup_requestPermissions_allUrls_skipCollapsedTabsWithCtrlTab": {
+    "message": "Ne pas déplier les arbres repliés et ignorer les descendants repliés lorsque vous changez d'onglet courant via des raccourcis claviers"
+  },
+  "_message_startup_requestPermissions_allUrls_preventBlankDialogRestoration": {
+    "message": ""
+  },
+  "_message_startup_requestPermissions_clipboardRead": {
+    "message": ""
+  },
+  "_message_startup_requestPermissions_clipboardRead_newTabButtonMiddleClick": {
+    "message": ""
+  },
   "message_startup_userChromeCss_notify": {
     "message": "Comment cacher la barre d'onglets du haut et l'entête du panneau latéral ?",
     "hash": "991184685e856081ec9ee06431fda2d2"
@@ -456,8 +515,14 @@
   "api_requestedPermissions_message": {
     "message": "⚠L'extension « $NAME$ » demande pour l'opération suivante :\n\n$PERMISSIONS$\n\nvia l'API de Tree Style Tab. Cliquez ici si vous voulez l'y autoriser.",
     "placeholders": {
-      "NAME": { "content": "$1", "example": "foobar" },
-      "PERMISSIONS": { "content": "$2", "example": "tabs" }
+      "NAME": {
+        "content": "$1",
+        "example": "foobar"
+      },
+      "PERMISSIONS": {
+        "content": "$2",
+        "example": "tabs"
+      }
     },
     "hash": "19fccbf5ec8b53a269aa021cdb5b5557"
   },
@@ -742,7 +807,7 @@
     "hash": "cb1e8ee431dcf1087099758e3a26c0ff"
   },
   "config_longPressOnNewTabButton_after": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "config_showNewTabActionSelector_label": {
@@ -778,7 +843,7 @@
     "hash": "98dcf1ec311682e253fe9675e33b268f"
   },
   "config_autoAttachOnNewTabCommand_after": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "config_guessNewOrphanTabAsOpenedByNewTabCommandUrl_before": {
@@ -810,7 +875,7 @@
     "hash": "98dcf1ec311682e253fe9675e33b268f"
   },
   "config_autoAttachOnNewTabButtonMiddleClick_after": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "config_duplicateTabAction_caption": {
@@ -842,7 +907,7 @@
     "hash": "98dcf1ec311682e253fe9675e33b268f"
   },
   "config_autoAttachOnDuplicated_after": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "config_fromExternal_caption": {
@@ -874,7 +939,7 @@
     "hash": "98dcf1ec311682e253fe9675e33b268f"
   },
   "config_autoAttachOnOpenedFromExternal_after": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "config_sameSiteOrphan_caption": {
@@ -906,7 +971,7 @@
     "hash": "98dcf1ec311682e253fe9675e33b268f"
   },
   "config_autoAttachSameSiteOrphan_after": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "config_autoAttachOnAnyOtherTrigger_before": {
@@ -934,7 +999,7 @@
     "hash": "98dcf1ec311682e253fe9675e33b268f"
   },
   "config_autoAttachOnAnyOtherTrigger_after": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "config_groupTab_caption": {
@@ -1218,7 +1283,7 @@
     "hash": "46d9ae37bed79016f68a06e41d246291"
   },
   "config_bookmarkTreeFolderName_after": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "config_bookmarkTreeFolderName_description": {
@@ -1230,7 +1295,7 @@
     "hash": "c0117bbe4fb5cf897e9eaa639761276f"
   },
   "config_defaultBookmarkParentId_label_after": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "config_userStyleRules_label": {
@@ -1437,16 +1502,36 @@
     "message": "Nouvel &onglet",
     "hash": "972407513d4d86d631c20a2cd3dc1d04"
   },
-  "tabContextMenu_newTabNext_label": { "message": "&Nouvel onglet en dessous" },
-  "tabContextMenu_newGroup_label":               { "message": "&Ajouter l’onglet à un nouveau groupe" },
-  "tabContextMenu_newGroup_label_multiselected": { "message": "&Ajouter les onglets à un nouveau groupe" },
-  "tabContextMenu_addToGroup_label":               { "message": "&Ajouter l’onglet au groupe" },
-  "tabContextMenu_addToGroup_label_multiselected": { "message": "&Ajouter les onglets au groupe" },
-  "tabContextMenu_addToGroup_newGroup_label":      { "message": "&Nouveau groupe" },
-  "tabContextMenu_addToGroup_unnamed_label":       { "message": "Groupe sans nom" },
-  "tabContextMenu_removeFromGroup_label":               { "message": "&Retirer du groupe" },
-  "tabContextMenu_removeFromGroup_label_multiselected": { "message": "&Retirer des groupes" },
-  "tabContextMenu_swapSplitView_label": { "message": "&Inverser les onglets" },
+  "tabContextMenu_newTabNext_label": {
+    "message": "&Nouvel onglet en dessous"
+  },
+  "tabContextMenu_newGroup_label": {
+    "message": "&Ajouter l’onglet à un nouveau groupe"
+  },
+  "tabContextMenu_newGroup_label_multiselected": {
+    "message": "&Ajouter les onglets à un nouveau groupe"
+  },
+  "tabContextMenu_addToGroup_label": {
+    "message": "&Ajouter l’onglet au groupe"
+  },
+  "tabContextMenu_addToGroup_label_multiselected": {
+    "message": "&Ajouter les onglets au groupe"
+  },
+  "tabContextMenu_addToGroup_newGroup_label": {
+    "message": "&Nouveau groupe"
+  },
+  "tabContextMenu_addToGroup_unnamed_label": {
+    "message": "Groupe sans nom"
+  },
+  "tabContextMenu_removeFromGroup_label": {
+    "message": "&Retirer du groupe"
+  },
+  "tabContextMenu_removeFromGroup_label_multiselected": {
+    "message": "&Retirer des groupes"
+  },
+  "tabContextMenu_swapSplitView_label": {
+    "message": "&Inverser les onglets"
+  },
   "tabContextMenu_reload_label": {
     "message": "&Actualiser l'onglet",
     "hash": "b47f1ba4fa9f6689bd27124978684636"
@@ -1467,7 +1552,9 @@
     "message": "Désé&pingler l'onglet",
     "hash": "60571db0ccb087c30009dadd2042ebd8"
   },
-  "tabContextMenu_unload_label":      { "message": "&Décharger l’onglet" },
+  "tabContextMenu_unload_label": {
+    "message": "&Décharger l’onglet"
+  },
   "tabContextMenu_duplicate_label": {
     "message": "D&upliquer l'onglet",
     "hash": "80666f37f8702cba5b66d3e8d816ea5c"
@@ -1504,7 +1591,9 @@
     "message": "Déplacer dans une &nouvelle fenêtre",
     "hash": "e73bb254e78fb1b2a161d4c3961065a9"
   },
-  "tabContextMenu_closeDuplicatedTabs_label": { "message": "Fermer les onglets en do&uble" },
+  "tabContextMenu_closeDuplicatedTabs_label": {
+    "message": "Fermer les onglets en do&uble"
+  },
   "tabContextMenu_closeMultipleTabs_label": {
     "message": "Fer&mer plusieurs onglets",
     "hash": "b421f1bac322ed85eaef8ff036b5a3d2"
@@ -1549,7 +1638,9 @@
     "message": "Désépingler les onglets",
     "hash": "b6bb715b523238636abe60c06c9679e6"
   },
-  "tabContextMenu_unload_label_multiselected":      { "message": "&Décharger %S onglets" },
+  "tabContextMenu_unload_label_multiselected": {
+    "message": "&Décharger %S onglets"
+  },
   "tabContextMenu_duplicate_label_multiselected": {
     "message": "Dupliquer les onglets",
     "hash": "0c30a83f8bcc07500df79d0596d99597"
@@ -1576,41 +1667,109 @@
     "message": "&Fermer %S onglets",
     "hash": "4b390c9abd8ac915b722d04f8555ce30"
   },
-
-  "tabGroupMenu_tab-group-editor-title-create":                 { "message": "Créer un groupe d’onglets" },
-  "tabGroupMenu_tab-group-editor-title-edit":                   { "message": "Gérer le groupe d’onglets" },
-  "tabGroupMenu_tab-group-editor-name-label":                   { "message": "Nom" },
-  "tabGroupMenu_tab-group-editor-name-field_placeholder":       { "message": "Exemple : achats" },
-  "tabGroupMenu_tab-group-editor-cancel_label":                 { "message": "Annuler" },
-  "tabGroupMenu_tab-group-editor-cancel_accesskey":             { "message": "A" },
-  "tabGroupMenu_tab-group-editor-color-selector_aria-label":    { "message": "Couleur du groupe d’onglets" },
-  "tabGroupMenu_tab-group-editor-color-selector2-blue":         { "message": "Bleu" },
-  "tabGroupMenu_tab-group-editor-color-selector2-blue_title":   { "message": "Bleu" },
-  "tabGroupMenu_tab-group-editor-color-selector2-purple":       { "message": "Violet" },
-  "tabGroupMenu_tab-group-editor-color-selector2-purple_title": { "message": "Violet" },
-  "tabGroupMenu_tab-group-editor-color-selector2-cyan":         { "message": "Cyan" },
-  "tabGroupMenu_tab-group-editor-color-selector2-cyan_title":   { "message": "Cyan" },
-  "tabGroupMenu_tab-group-editor-color-selector2-orange":       { "message": "Orange" },
-  "tabGroupMenu_tab-group-editor-color-selector2-orange_title": { "message": "Orange" },
-  "tabGroupMenu_tab-group-editor-color-selector2-yellow":       { "message": "Jaune" },
-  "tabGroupMenu_tab-group-editor-color-selector2-yellow_title": { "message": "Jaune" },
-  "tabGroupMenu_tab-group-editor-color-selector2-pink":         { "message": "Rose" },
-  "tabGroupMenu_tab-group-editor-color-selector2-pink_title":   { "message": "Rose" },
-  "tabGroupMenu_tab-group-editor-color-selector2-green":        { "message": "Vert" },
-  "tabGroupMenu_tab-group-editor-color-selector2-green_title":  { "message": "Vert" },
-  "tabGroupMenu_tab-group-editor-color-selector2-gray":         { "message": "Gris" },
-  "tabGroupMenu_tab-group-editor-color-selector2-gray_title":   { "message": "Gris" },
-  "tabGroupMenu_tab-group-editor-color-selector2-red":          { "message": "Rouge" },
-  "tabGroupMenu_tab-group-editor-color-selector2-red_title":    { "message": "Rouge" },
-  "tabGroupMenu_tab-group-editor-action-new-tab_label":         { "message": "Nouvel onglet dans le groupe" },
-  "tabGroupMenu_tab-group-editor-action-new-window_label":      { "message": "Déplacer vers une nouvelle fenêtre" },
-  "tabGroupMenu_tab-group-editor-action-copy-link_label":       { "message": "Copier le lien dans le groupe" },
-  "tabGroupMenu_tab-group-editor-action-copy-links_label":      { "message": "Copier les %S liens dans le groupe" },
-  "tabGroupMenu_tab-group-editor-action-save_label":            { "message": "Enregistrer et fermer le groupe" },
-  "tabGroupMenu_tab-group-editor-action-ungroup_label":         { "message": "Dissocier les onglets" },
-  "tabGroupMenu_tab-group-editor-action-delete_label":          { "message": "Supprimer le groupe" },
-  "tabGroupMenu_tab-group-editor-done_label":                   { "message": "Terminer" },
-  "tabGroupMenu_tab-group-editor-done_accesskey":               { "message": "T" },
-
-  "__WET_LOCALE__": { "message": "fr" }
+  "tabGroupMenu_tab_group_editor_title_create": {
+    "message": "Créer un groupe d’onglets"
+  },
+  "tabGroupMenu_tab_group_editor_title_edit": {
+    "message": "Gérer le groupe d’onglets"
+  },
+  "tabGroupMenu_tab_group_editor_name_label": {
+    "message": "Nom"
+  },
+  "tabGroupMenu_tab_group_editor_name_field_placeholder": {
+    "message": "Exemple : achats"
+  },
+  "tabGroupMenu_tab_group_editor_cancel_label": {
+    "message": "Annuler"
+  },
+  "tabGroupMenu_tab_group_editor_cancel_accesskey": {
+    "message": "A"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector_aria_label": {
+    "message": "Couleur du groupe d’onglets"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_blue": {
+    "message": "Bleu"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_blue_title": {
+    "message": "Bleu"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_purple": {
+    "message": "Violet"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_purple_title": {
+    "message": "Violet"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_cyan": {
+    "message": "Cyan"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_cyan_title": {
+    "message": "Cyan"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_orange": {
+    "message": "Orange"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_orange_title": {
+    "message": "Orange"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_yellow": {
+    "message": "Jaune"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_yellow_title": {
+    "message": "Jaune"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_pink": {
+    "message": "Rose"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_pink_title": {
+    "message": "Rose"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_green": {
+    "message": "Vert"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_green_title": {
+    "message": "Vert"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_gray": {
+    "message": "Gris"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_gray_title": {
+    "message": "Gris"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_red": {
+    "message": "Rouge"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_red_title": {
+    "message": "Rouge"
+  },
+  "tabGroupMenu_tab_group_editor_action_new_tab_label": {
+    "message": "Nouvel onglet dans le groupe"
+  },
+  "tabGroupMenu_tab_group_editor_action_new_window_label": {
+    "message": "Déplacer vers une nouvelle fenêtre"
+  },
+  "tabGroupMenu_tab_group_editor_action_copy_link_label": {
+    "message": "Copier le lien dans le groupe"
+  },
+  "tabGroupMenu_tab_group_editor_action_copy_links_label": {
+    "message": "Copier les %S liens dans le groupe"
+  },
+  "tabGroupMenu_tab_group_editor_action_save_label": {
+    "message": "Enregistrer et fermer le groupe"
+  },
+  "tabGroupMenu_tab_group_editor_action_ungroup_label": {
+    "message": "Dissocier les onglets"
+  },
+  "tabGroupMenu_tab_group_editor_action_delete_label": {
+    "message": "Supprimer le groupe"
+  },
+  "tabGroupMenu_tab_group_editor_done_label": {
+    "message": "Terminer"
+  },
+  "tabGroupMenu_tab_group_editor_done_accesskey": {
+    "message": "T"
+  },
+  "__WET_LOCALE__": {
+    "message": "fr"
+  }
 }

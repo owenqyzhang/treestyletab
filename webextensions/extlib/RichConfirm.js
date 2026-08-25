@@ -15,6 +15,9 @@ class RichConfirm {
     if (this.Dialog)
       return;
 
+    if (typeof document == 'undefined') // MV3 service worker: no DOM and no dynamic import()
+      throw new Error('RichConfirm: the dialog class is not loadable in a service worker');
+
     if (!this.dialogJsPath) {
       if (document.currentScript?.src) {
         // Try to auto-resolve from document.currentScript if not initialized via init()

@@ -142,7 +142,10 @@
   "tab_closebox_aria_label": {
     "message": "Tabblad #$ID$ sluiten",
     "placeholders": {
-      "id": { "content": "$1", "example": "1" }
+      "id": {
+        "content": "$1",
+        "example": "1"
+      }
     },
     "hash": "fb4f0ff83f6f41c749b445714ce27c7e"
   },
@@ -161,7 +164,10 @@
   "tab_soundButton_aria_label": {
     "message": "Tabblad #$ID$ dempen",
     "placeholders": {
-      "id": { "content": "$1", "example": "1" }
+      "id": {
+        "content": "$1",
+        "example": "1"
+      }
     },
     "hash": "6995d8b7906afe73760ca5ce3f068780"
   },
@@ -204,7 +210,10 @@
   "tab_twisty_aria_label": {
     "message": "Boom #$ID$ tonen/verbergen",
     "placeholders": {
-      "id": { "content": "$1", "example": "1" }
+      "id": {
+        "content": "$1",
+        "example": "1"
+      }
     },
     "hash": "ffec8a2561242cd401402ac249a013f9"
   },
@@ -219,17 +228,27 @@
   "tab_tree_tooltip": {
     "message": "$TREE$\n  …en $COUNT$ tabblad(en)",
     "placeholders": {
-      "tree": { "content": "$1", "example": "* Tree\n  * Style\n    * Tab" },
-      "count": { "content": "$2", "example": "3" }
+      "tree": {
+        "content": "$1",
+        "example": "* Tree\n  * Style\n    * Tab"
+      },
+      "count": {
+        "content": "$2",
+        "example": "3"
+      }
     },
     "hash": "f7d2172e715235f06bcb735d83461315"
   },
-  "tabbar_newTabButton_label":   { "message": "Nieuw tabblad" },
+  "tabbar_newTabButton_label": {
+    "message": "Nieuw tabblad"
+  },
   "tabbar_newTabButton_tooltip": {
     "message": "Nieuw tabblad openen",
     "hash": "cdeaa496e27f481f501b51c5f07478f9"
   },
-  "tabbar_newTabButton_tooltip_container": { "message": "\nHoud ingedrukt om een nieuw containertabblad te openen" },
+  "tabbar_newTabButton_tooltip_container": {
+    "message": "\nHoud ingedrukt om een nieuw containertabblad te openen"
+  },
   "tabbar_newTabAction_tooltip": {
     "message": "Nieuw tabblad openen als…",
     "hash": "4595cbc84085b40156711bb0df0f0ab8"
@@ -285,7 +304,10 @@
   "groupTab_label": {
     "message": "$TITLE$ en meer",
     "placeholders": {
-      "title": { "content": "$1", "example": "title" }
+      "title": {
+        "content": "$1",
+        "example": "title"
+      }
     },
     "hash": "631f9993dc81eb82f381ffff8c531551"
   },
@@ -304,7 +326,10 @@
   "groupTab_fromPinnedTab_label": {
     "message": "Tabbladen van $TITLE$",
     "placeholders": {
-      "title": { "content": "$1", "example": "title" }
+      "title": {
+        "content": "$1",
+        "example": "title"
+      }
     },
     "hash": "4bfbdd0d863b718a743bf1b3e168195c"
   },
@@ -319,7 +344,10 @@
   "bookmarkFolder_label_default": {
     "message": "%ANY(\"%GROUP%\", \"$TITLE$ en meer\")% (%YEAR%.%MONTH%.%DATE%)",
     "placeholders": {
-      "title": { "content": "$1", "example": "Title" }
+      "title": {
+        "content": "$1",
+        "example": "Title"
+      }
     },
     "hash": "a5f63f9ef1cf2cf7d989bc0bb3b37100"
   },
@@ -374,21 +402,30 @@
   "tabDragBehaviorNotification_message_base": {
     "message": "Buiten de zijbalk slepen leidt tot $RESULT$.",
     "placeholders": {
-      "result": { "content": "$1", "example": "something happen" }
+      "result": {
+        "content": "$1",
+        "example": "something happen"
+      }
     },
     "hash": "e443023e41d97ba6dd508cf8d86d289e"
   },
   "tabDragBehaviorNotification_message_inverted_base_with_shift": {
     "message": "Shift+verslepen leidt tot $RESULT$.",
     "placeholders": {
-      "result": { "content": "$1", "example": "something happen" }
+      "result": {
+        "content": "$1",
+        "example": "something happen"
+      }
     },
     "hash": "9e3f61f9cf4a6d781ea256425f797dd6"
   },
   "tabDragBehaviorNotification_message_inverted_base_without_shift": {
     "message": "Verslepen zonder Shift leidt tot $RESULT$.",
     "placeholders": {
-      "result": { "content": "$1", "example": "something happen" }
+      "result": {
+        "content": "$1",
+        "example": "something happen"
+      }
     },
     "hash": "ee6d9fcb223a49c66d4d44023ffe10a7"
   },
@@ -408,11 +445,16 @@
     "message": "maken van een link of bladwijzer op de nieuwe locatie",
     "hash": "80989b319537e780ba90b6b5e6053085"
   },
-  "dropToPinDescription": { "message": "Sleep het tabblad hierheen om het vast te zetten" },
+  "dropToPinDescription": {
+    "message": "Sleep het tabblad hierheen om het vast te zetten"
+  },
   "tabsHighlightingNotification_message": {
     "message": "Bezig met markeren… $PROGRESS$%",
     "placeholders": {
-      "progress": { "content": "$1", "example": "50" }
+      "progress": {
+        "content": "$1",
+        "example": "50"
+      }
     },
     "hash": "6ce5ee9ae57ee51d2c699734782255f9"
   },
@@ -427,7 +469,10 @@
   "warnOnCloseTabs_message": {
     "message": "U staat op het punt om $NUMBER$ tabbladen te sluiten. Weet u het zeker?",
     "placeholders": {
-      "NUMBER": { "content": "$1", "example": "10" }
+      "NUMBER": {
+        "content": "$1",
+        "example": "10"
+      }
     },
     "hash": "e3c228fe083b75f07a680e0f2b8cdcfb"
   },
@@ -438,7 +483,10 @@
   "warnOnCloseTabs_message_short": {
     "message": "$NUMBER$ tabbladen sluiten?",
     "placeholders": {
-      "NUMBER": { "content": "$1", "example": "10" }
+      "NUMBER": {
+        "content": "$1",
+        "example": "10"
+      }
     }
   },
   "warnOnCloseTabs_warnAgain_short": {
@@ -458,19 +506,31 @@
   },
   "warnOnCloseTabs_fromOutside_message": {
     "message": "Het te sluiten tabblad bevat $NUMBER$ onderliggende tabbladen. Wilt u deze ook sluiten?\n(Als u op annuleren klikt, wordt het hoofdtabblad hersteld.)",
-    "hash": "45de45a9f0036f5013c6a93af03fb399"
+    "hash": "45de45a9f0036f5013c6a93af03fb399",
+    "placeholders": {
+      "NUMBER": {
+        "content": "$1",
+        "example": "10"
+      }
+    }
   },
   "warnOnCloseTabs_notification_message": {
     "message": "Als u dit niet wilt, klik dan hier om te annuleren.\nAls u niets doet, dan worden de resterende tabbladen over $TIMEOUT$ gesloten.",
     "placeholders": {
-      "TIMEOUT": { "content": "$1", "example": "10" }
+      "TIMEOUT": {
+        "content": "$1",
+        "example": "10"
+      }
     },
     "hash": "37cac4a438e8d5d2a3939a30d81dfe5c"
   },
   "warnOnCloseTabs_notification_message_linux": {
     "message": "Als u dit niet wilt, klik dan op de knop om te annuleren.\nAls u niets doet, dan worden de resterende tabbladen over $TIMEOUT$ gesloten.",
     "placeholders": {
-      "TIMEOUT": { "content": "$1", "example": "10" }
+      "TIMEOUT": {
+        "content": "$1",
+        "example": "10"
+      }
     },
     "hash": "5d44294be37a47e004a3bbe36c75aa85"
   },
@@ -481,7 +541,10 @@
   "warnOnAutoGroupNewTabs_message": {
     "message": "Er zijn $NUMBER$ tabbladen tegelijk geopend. Wilt u ze groeperen in een boomweergave?",
     "placeholders": {
-      "NUMBER": { "content": "$1", "example": "10" }
+      "NUMBER": {
+        "content": "$1",
+        "example": "10"
+      }
     },
     "hash": "1166af124a483e11003079ef324faab7"
   },
@@ -556,8 +619,14 @@
   "syncDeviceDefaultName": {
     "message": "$BROWSER$ op $PLATFORM$",
     "placeholders": {
-      "PLATFORM": { "content": "$1", "example": "Firefox" },
-      "BROWSER": { "content": "$2", "example": "Windows" }
+      "PLATFORM": {
+        "content": "$1",
+        "example": "Firefox"
+      },
+      "BROWSER": {
+        "content": "$2",
+        "example": "Windows"
+      }
     },
     "hash": "9dd1c09b66b109886062337e6ba5cb11"
   },
@@ -582,29 +651,35 @@
     "hash": "d671b070b088c84c01aa1df679f4aaf4"
   },
   "sentTabs_notification_title": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "sentTabs_notification_message": {
     "message": "Het tabblad is naar $DEVICE$ verstuurd",
     "placeholders": {
-      "DEVICE": { "content": "$1", "example": "Firefox on Device X" }
+      "DEVICE": {
+        "content": "$1",
+        "example": "Firefox on Device X"
+      }
     },
     "hash": "270c36d9e8def4a6b6582a47d190e4cf"
   },
   "sentTabs_notification_title_multiple": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "sentTabs_notification_message_multiple": {
     "message": "De tabbladen zijn naar $DEVICE$ verstuurd",
     "placeholders": {
-      "DEVICE": { "content": "$1", "example": "Firefox on Device X" }
+      "DEVICE": {
+        "content": "$1",
+        "example": "Firefox on Device X"
+      }
     },
     "hash": "3927d1be6613b44761cc47c8f7c94c18"
   },
   "sentTabsToAllDevices_notification_title": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "sentTabsToAllDevices_notification_message": {
@@ -612,7 +687,7 @@
     "hash": "b2cbf13000adec5e9ead34ecb0329107"
   },
   "sentTabsToAllDevices_notification_title_multiple": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "sentTabsToAllDevices_notification_message_multiple": {
@@ -622,30 +697,48 @@
   "receiveTabs_notification_title": {
     "message": "Tabblad van $DEVICE$",
     "placeholders": {
-      "DEVICE": { "content": "$1", "example": "Firefox on Device X" }
+      "DEVICE": {
+        "content": "$1",
+        "example": "Firefox on Device X"
+      }
     },
     "hash": "44891cb410ee7245326c7fdfd591fcb1"
   },
   "receiveTabs_notification_message": {
     "message": "$URL$",
     "placeholders": {
-      "URL": { "content": "$1", "example": "http://example.com/" }
+      "URL": {
+        "content": "$1",
+        "example": "http://example.com/"
+      }
     },
     "hash": "2f907304959eb1856d8a6037fdc0086a"
   },
   "receiveTabs_notification_title_multiple": {
     "message": "Tabbladen van $DEVICE$",
     "placeholders": {
-      "DEVICE": { "content": "$1", "example": "Firefox on Device X" }
+      "DEVICE": {
+        "content": "$1",
+        "example": "Firefox on Device X"
+      }
     },
     "hash": "19a18fafaea7da009dbfaafe117edf2a"
   },
   "receiveTabs_notification_message_multiple": {
     "message": "$URL$\nen $REST$ ander(e) tabblad(en)",
     "placeholders": {
-      "URL": { "content": "$1", "example": "http://example.com/" },
-      "ALL": { "content": "$2", "example": "4" },
-      "REST": { "content": "$3", "example": "3" }
+      "URL": {
+        "content": "$1",
+        "example": "http://example.com/"
+      },
+      "ALL": {
+        "content": "$2",
+        "example": "4"
+      },
+      "REST": {
+        "content": "$3",
+        "example": "3"
+      }
     },
     "hash": "15adadb8434c4391c98fd1ce511e1ae0"
   },
@@ -741,16 +834,36 @@
     "message": "⚠Sommige functies vereisen aanvullende bevoegdheden. Als u gebruik wilt maken van deze functies, wijs dan de juiste bevoegdheden toe.",
     "hash": "579d612ed89439363c1b15dc629175bc"
   },
-  "message_startup_requestPermissions_bookmarks": { "message": "Bladwijzer toegang" },
-  "message_startup_requestPermissions_bookmarks_contextMenuItems": { "message": "‘Boom toevoegen aan bladwijzers’ in het rechtermuisknopmenu, automatische migratie van interne bladwijzer-url's en detectie van tabbladen geopend via de bladwijzers" },
-  "_message_startup_requestPermissions_bookmarks_migrationForImportedBookmarks": { "message": "" },
-  "_message_startup_requestPermissions_bookmarks_detectTabsFromBookmarks": { "message": "" },
-  "_message_startup_requestPermissions_allUrls":   { "message": "" },
-  "_message_startup_requestPermissions_allUrls_tabPreviewPanel":   { "message": "" },
-  "message_startup_requestPermissions_allUrls_skipCollapsedTabsWithCtrlTab":   { "message": "Klap ingeklapte bomen niet uit  en verleg de focus van tabbladen naar het toetsenbord." },
-  "message_startup_requestPermissions_allUrls_preventBlankDialogRestoration":   { "message": "Herstel geen blanco vensters door acties die gesloten tabbladen herstellen." },
-  "_message_startup_requestPermissions_clipboardRead": { "message": "" },
-  "message_startup_requestPermissions_clipboardRead_newTabButtonMiddleClick": { "message": "Open een nieuw tabblad met daarop de url van het klembord door te middelklikken op de knop ‘Nieuw tabblad’ (dom.events.asyncClipboard.clipboardItem dient mogelijk te worden ingeschakeld)." },
+  "message_startup_requestPermissions_bookmarks": {
+    "message": "Bladwijzer toegang"
+  },
+  "message_startup_requestPermissions_bookmarks_contextMenuItems": {
+    "message": "‘Boom toevoegen aan bladwijzers’ in het rechtermuisknopmenu, automatische migratie van interne bladwijzer-url's en detectie van tabbladen geopend via de bladwijzers"
+  },
+  "_message_startup_requestPermissions_bookmarks_migrationForImportedBookmarks": {
+    "message": ""
+  },
+  "_message_startup_requestPermissions_bookmarks_detectTabsFromBookmarks": {
+    "message": ""
+  },
+  "_message_startup_requestPermissions_allUrls": {
+    "message": ""
+  },
+  "_message_startup_requestPermissions_allUrls_tabPreviewPanel": {
+    "message": ""
+  },
+  "message_startup_requestPermissions_allUrls_skipCollapsedTabsWithCtrlTab": {
+    "message": "Klap ingeklapte bomen niet uit  en verleg de focus van tabbladen naar het toetsenbord."
+  },
+  "message_startup_requestPermissions_allUrls_preventBlankDialogRestoration": {
+    "message": "Herstel geen blanco vensters door acties die gesloten tabbladen herstellen."
+  },
+  "_message_startup_requestPermissions_clipboardRead": {
+    "message": ""
+  },
+  "message_startup_requestPermissions_clipboardRead_newTabButtonMiddleClick": {
+    "message": "Open een nieuw tabblad met daarop de url van het klembord door te middelklikken op de knop ‘Nieuw tabblad’ (dom.events.asyncClipboard.clipboardItem dient mogelijk te worden ingeschakeld)."
+  },
   "message_startup_userChromeCss_notify": {
     "message": "Hoe verberg ik de tabbladbalk bovenaan en de zijbalkkop?",
     "hash": "991184685e856081ec9ee06431fda2d2"
@@ -786,16 +899,28 @@
   "api_requestedPermissions_message": {
     "message": "⚠“$NAME$” verzoekt om de volgende actie uit te voeren:\n\n$PERMISSIONS$\n\nvia de Tree Style Tab-api. Klik hier om goed te keuren.",
     "placeholders": {
-      "NAME": { "content": "$1", "example": "foobar" },
-      "PERMISSIONS": { "content": "$2", "example": "tabs" }
+      "NAME": {
+        "content": "$1",
+        "example": "foobar"
+      },
+      "PERMISSIONS": {
+        "content": "$2",
+        "example": "tabs"
+      }
     },
     "hash": "32ac548c63a221da2b317df36871260e"
   },
   "api_requestedPermissions_message_linux": {
     "message": "⚠“$NAME$” verzoekt om de volgende actie uit te voeren:\n\n$PERMISSIONS$\n\nvia de Tree Style Tab-api. Klik op de knop om goed te keuren.",
     "placeholders": {
-      "NAME": { "content": "$1", "example": "foobar" },
-      "PERMISSIONS": { "content": "$2", "example": "tabs" }
+      "NAME": {
+        "content": "$1",
+        "example": "foobar"
+      },
+      "PERMISSIONS": {
+        "content": "$2",
+        "example": "tabs"
+      }
     },
     "hash": "ed605167d91cbf6601b11bb6b029a190"
   },
@@ -1372,7 +1497,7 @@
     "hash": "99e101f57240be7a3428e166c4751c0f"
   },
   "config_autoAttachOnContextNewTabCommand_after": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "config_newTabWithOwner_caption": {
@@ -1412,7 +1537,7 @@
     "hash": "35f4e4e8064fb9b94728e16546db66e4"
   },
   "config_autoAttachOnOpenedWithOwner_after": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "config_insertNewTabFromFirefoxViewAt_caption": {
@@ -1496,7 +1621,7 @@
     "hash": "cb1e8ee431dcf1087099758e3a26c0ff"
   },
   "config_longPressOnNewTabButton_after": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "config_showNewTabActionSelector_label": {
@@ -1540,7 +1665,7 @@
     "hash": "cceaa50512a93c462dfe0e6e2361b6d8"
   },
   "config_autoAttachOnNewTabCommand_after": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "config_guessNewOrphanTabAsOpenedByNewTabCommandTitle_before": {
@@ -1588,7 +1713,7 @@
     "hash": "f399c52ea22d25665043099d96f0ba85"
   },
   "config_autoAttachOnNewTabButtonMiddleClick_after": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "config_middleClickPasteURLOnNewTabButton_label": {
@@ -1628,7 +1753,7 @@
     "hash": "99e101f57240be7a3428e166c4751c0f"
   },
   "config_autoAttachOnNewTabButtonAccelClick_after": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "config_autoAttachWithURL_caption": {
@@ -1668,7 +1793,7 @@
     "hash": "cceaa50512a93c462dfe0e6e2361b6d8"
   },
   "config_autoAttachOnDuplicated_after": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "config_fromExternal_caption": {
@@ -1704,7 +1829,7 @@
     "hash": "cceaa50512a93c462dfe0e6e2361b6d8"
   },
   "config_autoAttachOnOpenedFromExternal_after": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "config_inheritContextualIdentityToTabsFromExternalMode_label": {
@@ -1756,7 +1881,7 @@
     "hash": "cceaa50512a93c462dfe0e6e2361b6d8"
   },
   "config_autoAttachSameSiteOrphan_after": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "config_inheritContextualIdentityToSameSiteOrphanMode_label": {
@@ -2392,7 +2517,7 @@
     "hash": "46d9ae37bed79016f68a06e41d246291"
   },
   "config_bookmarkTreeFolderName_after": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "config_bookmarkTreeFolderName_description": {
@@ -2404,7 +2529,7 @@
     "hash": "c0117bbe4fb5cf897e9eaa639761276f"
   },
   "config_defaultBookmarkParentId_label_after": {
-    "message": "\u200b",
+    "message": "​",
     "hash": "aa7906338dbdd2af4993295aa9112e97"
   },
   "config_undoMultipleTabsClose_label": {
@@ -2694,7 +2819,10 @@
   "config_delayForDuplicatedTabDetection_test_resultMessage": {
     "message": "$PERCENTAGE$% gedetecteerd.",
     "placeholders": {
-      "percentage": { "content": "$1", "example": "50" }
+      "percentage": {
+        "content": "$1",
+        "example": "50"
+      }
     },
     "hash": "9dcf1a6b1925093068fdd48e071cb3a3"
   },
@@ -2742,16 +2870,36 @@
     "message": "Nieu&w tabblad",
     "hash": "972407513d4d86d631c20a2cd3dc1d04"
   },
-  "tabContextMenu_newTabNext_label": { "message": "Nieu&w tabblad hieronder" },
-  "tabContextMenu_newGroup_label":               { "message": "Tabblad aan nieuwe &groep toevoegen" },
-  "tabContextMenu_newGroup_label_multiselected": { "message": "Tabbladen aan nieuwe &groep toevoegen" },
-  "tabContextMenu_addToGroup_label":               { "message": "Tabblad aan &groep toevoegen" },
-  "tabContextMenu_addToGroup_label_multiselected": { "message": "Tabbladen aan &groep toevoegen" },
-  "tabContextMenu_addToGroup_newGroup_label":      { "message": "Nieuwe &groep" },
-  "tabContextMenu_addToGroup_unnamed_label":       { "message": "Naamloze groep" },
-  "tabContextMenu_removeFromGroup_label":               { "message": "&Verwijderen uit groep" },
-  "tabContextMenu_removeFromGroup_label_multiselected": { "message": "&Verwijderen uit groepen" },
-  "tabContextMenu_swapSplitView_label": { "message": "Tabbladen &omkeren" },
+  "tabContextMenu_newTabNext_label": {
+    "message": "Nieu&w tabblad hieronder"
+  },
+  "tabContextMenu_newGroup_label": {
+    "message": "Tabblad aan nieuwe &groep toevoegen"
+  },
+  "tabContextMenu_newGroup_label_multiselected": {
+    "message": "Tabbladen aan nieuwe &groep toevoegen"
+  },
+  "tabContextMenu_addToGroup_label": {
+    "message": "Tabblad aan &groep toevoegen"
+  },
+  "tabContextMenu_addToGroup_label_multiselected": {
+    "message": "Tabbladen aan &groep toevoegen"
+  },
+  "tabContextMenu_addToGroup_newGroup_label": {
+    "message": "Nieuwe &groep"
+  },
+  "tabContextMenu_addToGroup_unnamed_label": {
+    "message": "Naamloze groep"
+  },
+  "tabContextMenu_removeFromGroup_label": {
+    "message": "&Verwijderen uit groep"
+  },
+  "tabContextMenu_removeFromGroup_label_multiselected": {
+    "message": "&Verwijderen uit groepen"
+  },
+  "tabContextMenu_swapSplitView_label": {
+    "message": "Tabbladen &omkeren"
+  },
   "tabContextMenu_reload_label": {
     "message": "Tabblad he&rladen",
     "hash": "b47f1ba4fa9f6689bd27124978684636"
@@ -2776,7 +2924,9 @@
     "message": "Ta&bblad losmaken",
     "hash": "60571db0ccb087c30009dadd2042ebd8"
   },
-  "tabContextMenu_unload_label":      { "message": "Tabblad &ontladen" },
+  "tabContextMenu_unload_label": {
+    "message": "Tabblad &ontladen"
+  },
   "tabContextMenu_duplicate_label": {
     "message": "Tabbla&d klonen",
     "hash": "80666f37f8702cba5b66d3e8d816ea5c"
@@ -2889,7 +3039,9 @@
     "message": "Tab&bladen losmaken",
     "hash": "b6bb715b523238636abe60c06c9679e6"
   },
-  "tabContextMenu_unload_label_multiselected":      { "message": "%S tabbladen &ontladen" },
+  "tabContextMenu_unload_label_multiselected": {
+    "message": "%S tabbladen &ontladen"
+  },
   "tabContextMenu_duplicate_label_multiselected": {
     "message": "Tabbla&den klonen",
     "hash": "0c30a83f8bcc07500df79d0596d99597"
@@ -2932,41 +3084,109 @@
     "message": "%S tabbladen &sluiten",
     "hash": "4b390c9abd8ac915b722d04f8555ce30"
   },
-
-  "tabGroupMenu_tab-group-editor-title-create":                 { "message": "Tabbladgroep maken" },
-  "tabGroupMenu_tab-group-editor-title-edit":                   { "message": "Tabbladgroep beheren" },
-  "tabGroupMenu_tab-group-editor-name-label":                   { "message": "Naam" },
-  "tabGroupMenu_tab-group-editor-name-field_placeholder":       { "message": "Voorbeeld: winkelen" },
-  "tabGroupMenu_tab-group-editor-cancel_label":                 { "message": "Annuleren" },
-  "tabGroupMenu_tab-group-editor-cancel_accesskey":             { "message": "A" },
-  "tabGroupMenu_tab-group-editor-color-selector_aria-label":    { "message": "Tabbladgroepskleur" },
-  "tabGroupMenu_tab-group-editor-color-selector2-blue":         { "message": "Blauw" },
-  "tabGroupMenu_tab-group-editor-color-selector2-blue_title":   { "message": "Blauw" },
-  "tabGroupMenu_tab-group-editor-color-selector2-purple":       { "message": "Paars" },
-  "tabGroupMenu_tab-group-editor-color-selector2-purple_title": { "message": "Paars" },
-  "tabGroupMenu_tab-group-editor-color-selector2-cyan":         { "message": "Cyaan" },
-  "tabGroupMenu_tab-group-editor-color-selector2-cyan_title":   { "message": "Cyaan" },
-  "tabGroupMenu_tab-group-editor-color-selector2-orange":       { "message": "Oranje" },
-  "tabGroupMenu_tab-group-editor-color-selector2-orange_title": { "message": "Oranje" },
-  "tabGroupMenu_tab-group-editor-color-selector2-yellow":       { "message": "Geel" },
-  "tabGroupMenu_tab-group-editor-color-selector2-yellow_title": { "message": "Geel" },
-  "tabGroupMenu_tab-group-editor-color-selector2-pink":         { "message": "Roze" },
-  "tabGroupMenu_tab-group-editor-color-selector2-pink_title":   { "message": "Roze" },
-  "tabGroupMenu_tab-group-editor-color-selector2-green":        { "message": "Groen" },
-  "tabGroupMenu_tab-group-editor-color-selector2-green_title":  { "message": "Groen" },
-  "tabGroupMenu_tab-group-editor-color-selector2-gray":         { "message": "Grijs" },
-  "tabGroupMenu_tab-group-editor-color-selector2-gray_title":   { "message": "Grijs" },
-  "tabGroupMenu_tab-group-editor-color-selector2-red":          { "message": "Rood" },
-  "tabGroupMenu_tab-group-editor-color-selector2-red_title":    { "message": "Rood" },
-  "tabGroupMenu_tab-group-editor-action-new-tab_label":         { "message": "Nieuw tabblad in groep" },
-  "tabGroupMenu_tab-group-editor-action-new-window_label":      { "message": "Groep naar nieuw venster verplaatsen" },
-  "tabGroupMenu_tab-group-editor-action-copy-link_label":       { "message": "Koppeling in groep kopiëren" },
-  "tabGroupMenu_tab-group-editor-action-copy-links_label":      { "message": "%S koppelingen in groep kopiëren" },
-  "tabGroupMenu_tab-group-editor-action-save_label":            { "message": "Groep opslaan en sluiten" },
-  "tabGroupMenu_tab-group-editor-action-ungroup_label":         { "message": "Tabbladgroepering opheffen" },
-  "tabGroupMenu_tab-group-editor-action-delete_label":          { "message": "Groep verwijderen" },
-  "tabGroupMenu_tab-group-editor-done_label":                   { "message": "Gereed" },
-  "tabGroupMenu_tab-group-editor-done_accesskey":               { "message": "G" },
-
-  "__WET_LOCALE__": { "message": "nl" }
+  "tabGroupMenu_tab_group_editor_title_create": {
+    "message": "Tabbladgroep maken"
+  },
+  "tabGroupMenu_tab_group_editor_title_edit": {
+    "message": "Tabbladgroep beheren"
+  },
+  "tabGroupMenu_tab_group_editor_name_label": {
+    "message": "Naam"
+  },
+  "tabGroupMenu_tab_group_editor_name_field_placeholder": {
+    "message": "Voorbeeld: winkelen"
+  },
+  "tabGroupMenu_tab_group_editor_cancel_label": {
+    "message": "Annuleren"
+  },
+  "tabGroupMenu_tab_group_editor_cancel_accesskey": {
+    "message": "A"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector_aria_label": {
+    "message": "Tabbladgroepskleur"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_blue": {
+    "message": "Blauw"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_blue_title": {
+    "message": "Blauw"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_purple": {
+    "message": "Paars"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_purple_title": {
+    "message": "Paars"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_cyan": {
+    "message": "Cyaan"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_cyan_title": {
+    "message": "Cyaan"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_orange": {
+    "message": "Oranje"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_orange_title": {
+    "message": "Oranje"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_yellow": {
+    "message": "Geel"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_yellow_title": {
+    "message": "Geel"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_pink": {
+    "message": "Roze"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_pink_title": {
+    "message": "Roze"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_green": {
+    "message": "Groen"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_green_title": {
+    "message": "Groen"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_gray": {
+    "message": "Grijs"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_gray_title": {
+    "message": "Grijs"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_red": {
+    "message": "Rood"
+  },
+  "tabGroupMenu_tab_group_editor_color_selector2_red_title": {
+    "message": "Rood"
+  },
+  "tabGroupMenu_tab_group_editor_action_new_tab_label": {
+    "message": "Nieuw tabblad in groep"
+  },
+  "tabGroupMenu_tab_group_editor_action_new_window_label": {
+    "message": "Groep naar nieuw venster verplaatsen"
+  },
+  "tabGroupMenu_tab_group_editor_action_copy_link_label": {
+    "message": "Koppeling in groep kopiëren"
+  },
+  "tabGroupMenu_tab_group_editor_action_copy_links_label": {
+    "message": "%S koppelingen in groep kopiëren"
+  },
+  "tabGroupMenu_tab_group_editor_action_save_label": {
+    "message": "Groep opslaan en sluiten"
+  },
+  "tabGroupMenu_tab_group_editor_action_ungroup_label": {
+    "message": "Tabbladgroepering opheffen"
+  },
+  "tabGroupMenu_tab_group_editor_action_delete_label": {
+    "message": "Groep verwijderen"
+  },
+  "tabGroupMenu_tab_group_editor_done_label": {
+    "message": "Gereed"
+  },
+  "tabGroupMenu_tab_group_editor_done_accesskey": {
+    "message": "G"
+  },
+  "__WET_LOCALE__": {
+    "message": "nl"
+  }
 }

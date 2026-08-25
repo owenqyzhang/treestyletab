@@ -21,6 +21,12 @@
 */
 'use strict';
 
+// Dynamic import() is disallowed in service workers, so these are static.
+// Both modules are side-effect free at import time; their init() is only
+// called from the service worker below.
+import * as CompatSessions from '/common/compat-sessions.js';
+import * as CompatSuccessor from '/common/compat-successor.js';
+
 export const IS_SERVICE_WORKER = typeof document == 'undefined' && typeof window == 'undefined';
 
 const NATIVE = (() => {
@@ -266,10 +272,6 @@ function buildCompatBrowser(chrome) {
   });
 
   // ----- tabs --------------------------------------------------------
-  const successorModulePromise = IS_SERVICE_WORKER ?
-    import('/common/compat-successor.js') :
-    null;
-
   // Synthesize Firefox's activeInfo.previousTabId (Chrome omits it).
   // The recorder listener below is registered before any TST listener
   // (the compat layer is always the first import), so by the time user
@@ -323,10 +325,8 @@ function buildCompatBrowser(chrome) {
         tabId  = undefined;
       }
       const { cleaned, removed } = stripUnsupported(params, TAB_UPDATE_UNSUPPORTED);
-      if (removed && 'successorTabId' in removed && successorModulePromise) {
-        const successorModule = await successorModulePromise;
-        successorModule.setSuccessor(tabId, removed.successorTabId);
-      }
+      if (removed && 'successorTabId' in removed && IS_SERVICE_WORKER)
+        CompatSuccessor.setSuccessor(tabId, removed.successorTabId);
       if (Object.keys(cleaned).length == 0)
         return normalizeTab(await chrome.tabs.get(tabId));
       const tab = tabId === undefined ?
@@ -348,10 +348,8 @@ function buildCompatBrowser(chrome) {
       const tab = normalizeTab(await (params === undefined ?
         chrome.tabs.duplicate(tabId) :
         chrome.tabs.duplicate(tabId, params)));
-      if (IS_SERVICE_WORKER && tab?.id) {
-        const sessions = await import('/common/compat-sessions.js');
-        await sessions.copyTabValues(tabId, tab.id);
-      }
+      if (IS_SERVICE_WORKER && tab?.id)
+        await CompatSessions.copyTabValues(tabId, tab.id);
       return tab;
     },
     // Firefox-only APIs
@@ -360,10 +358,9 @@ function buildCompatBrowser(chrome) {
     async warmup(_tabIds) {},
     async toggleReaderMode(_tabId) {},
     async moveInSuccession(tabIds, tabId, options = {}) {
-      if (!successorModulePromise)
+      if (!IS_SERVICE_WORKER)
         return;
-      const successorModule = await successorModulePromise;
-      successorModule.moveInSuccession(tabIds, tabId, options);
+      CompatSuccessor.moveInSuccession(tabIds, tabId, options);
     },
     async captureTab(tabId, options = {}) {
       // Chrome can only capture the visible tab of a window.
@@ -419,7 +416,7 @@ function buildCompatBrowser(chrome) {
   // (getRecentlyClosed, restore, MAX_SESSION_RESULTS) pass through.
   const sessionsRPC = (method, ...args) => {
     if (IS_SERVICE_WORKER)
-      return import('/common/compat-sessions.js').then(sessionsModule => sessionsModule[method](...args));
+      return CompatSessions[method](...args);
     return chrome.runtime.sendMessage({
       type: 'treestyletab:compat-sessions',
       method,
@@ -780,8 +777,8 @@ if (IS_CHROME) {
     // Initialize emulation modules early: sessions values must be
     // restored before TST polls them, and the successor/keepalive
     // machinery must be armed on every service worker start.
-    import('/common/compat-sessions.js').then(sessionsModule => sessionsModule.init());
-    import('/common/compat-successor.js').then(successorModule => successorModule.init());
+    CompatSessions.init();
+    CompatSuccessor.init();
 
     // Keep the service worker alive: TST keeps all tree state in memory
     // and re-initialization is expensive, so emulate Firefox's persistent
