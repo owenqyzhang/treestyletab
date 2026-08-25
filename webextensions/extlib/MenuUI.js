@@ -267,7 +267,11 @@
           if (item.dataset.iconColor) {
             item.style.backgroundImage = '';
             icon.style.backgroundColor = item.dataset.iconColor;
-            icon.style.mask            = `url(${JSON.stringify(item.dataset.icon)}) no-repeat center / 100%`;
+            // Chrome fetches CSS mask images in CORS mode which the
+            // extension scheme does not satisfy => inline as data URI.
+            MenuUI.toMaskImageURL(item.dataset.icon).then(url => {
+              icon.style.mask = `url(${JSON.stringify(url)}) no-repeat center / 100%`;
+            });
           }
           else {
             item.style.backgroundImage = `url(${JSON.stringify(item.dataset.icon)})`;
@@ -1140,5 +1144,27 @@
   };
 
   MenuUI.init();
+
+  // Chrome cannot use chrome-extension:// URLs as CSS mask images
+  // (mask fetches are CORS mode); convert them to data URIs.
+  MenuUI.$maskImageURLCache = new Map();
+  MenuUI.toMaskImageURL = async url => {
+    if (!/^(?:chrome|moz)-extension:/.test(url))
+      return url;
+    let cached = MenuUI.$maskImageURLCache.get(url);
+    if (!cached) {
+      cached = fetch(url)
+        .then(response => response.blob())
+        .then(blob => new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        }))
+        .catch(_error => url);
+      MenuUI.$maskImageURLCache.set(url, cached);
+    }
+    return cached;
+  };
 }
 export default MenuUI;
