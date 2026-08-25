@@ -228,7 +228,10 @@ export const configs = new Configs({
   zoomable:                         false,
 
   inContentUIOffsetTop:                             0, // See also https://github.com/piroor/treestyletab/issues/3698
-  tabPreviewTooltip:                                false,
+  // Enabled by default on the Chrome port: replaces the unstylable native
+  // title-attribute tooltip with the rich hover card, like Chrome's own
+  // tab hover cards.
+  tabPreviewTooltip:                                true,
   tabPreviewTooltipRenderIn:                        Constants.kIN_CONTENT_PANEL_RENDER_IN_ANYWHERE,
   tabPreviewTooltipDelayMsec:                       500, // same as "ui.tooltip.delay_ms"
   showOverflowTitleByTooltip:                       true,

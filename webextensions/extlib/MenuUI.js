@@ -1073,8 +1073,8 @@
 
         /* Menu-like appearance */
         ${common}.menu {
-          --menu-ui-background-color: Menu;
-          --menu-ui-text-color: MenuText;
+          --menu-ui-background-color: Canvas;
+          --menu-ui-text-color: CanvasText;
           --menu-ui-background-color-active: Highlight;
           --menu-ui-text-color-active: HighlightText;
         }

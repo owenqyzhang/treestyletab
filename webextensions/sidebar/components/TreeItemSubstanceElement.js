@@ -24,6 +24,10 @@ import { kTAB_CLOSE_BOX_ELEMENT_NAME } from './TabCloseBoxElement.js';
 
 export const kTREE_ITEM_SUBSTANCE_ELEMENT_NAME = 'tab-item-substance';
 
+// On Chrome the hover card works without any capture permission
+// (title/URL/memory only), like Chrome's native tab hover cards.
+const IS_CHROME = typeof chrome != 'undefined' && !!chrome.sidePanel;
+
 export const kEVENT_TREE_ITEM_SUBSTANCE_ENTER = 'tab-item-substance-enter';
 export const kEVENT_TREE_ITEM_SUBSTANCE_LEAVE = 'tab-item-substance-leave';
 
@@ -359,6 +363,7 @@ export class TreeItemSubstanceElement extends HTMLElement {
     this.useTabPreviewTooltip = !!(
       configs.tabPreviewTooltip &&
       (canCaptureTab ||
+       IS_CHROME ||
        raw.type == TreeItem.TYPE_GROUP) &&
       (((configs.tabPreviewTooltipRenderIn & Constants.kIN_CONTENT_PANEL_RENDER_IN_CONTENT) &&
         canInjectScriptToTab) ||

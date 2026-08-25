@@ -1,0 +1,64 @@
+/*
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+
+/*
+  Chrome native-like appearance for context menus built with
+  extlib/MenuUI.js ("menu" appearance). System colors (Canvas,
+  CanvasText, Highlight) keep the menu readable in both light and
+  dark modes.
+  MenuUI.js injects its own stylesheet after this one, with all rules
+  prefixed by a generated common class (e.g. ".menu-ui-48038"), so
+  selectors here repeat the stable ".menu-ui" class to win the
+  specificity race against those injected rules.
+*/
+
+.menu-ui.menu-ui.menu-ui.menu,
+.menu-ui.menu-ui.menu-ui.menu ul {
+  border: 1px solid color-mix(in srgb, CanvasText 15%, transparent);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  font: 13px system-ui;
+  padding-block: 5px;
+}
+
+.menu-ui.menu-ui.menu-ui.menu li {
+  border-radius: 4px;
+  line-height: 1.5;
+  margin-inline: 5px;
+  padding: 4px 12px;
+}
+
+.menu-ui.menu-ui.menu-ui.menu li.disabled {
+  /* Chrome's native menu never highlights disabled items. */
+  --menu-ui-background-color-active: transparent;
+  --menu-ui-text-color-active: CanvasText;
+  opacity: 0.4;
+}
+
+.menu-ui.menu-ui.menu-ui.menu li.separator {
+  border: none;
+  border-top: 1px solid color-mix(in srgb, CanvasText 12%, transparent);
+  height: 0;
+  margin: 5px 10px;
+  max-height: 0;
+  opacity: 1;
+  padding: 0;
+  visibility: visible;
+}
+
+/* Keep submenu arrows and check marks inside the inset
+   (margin-inline) item area, so they stay on the highlight
+   while the item is hovered or focused. */
+.menu-ui.menu-ui.menu-ui.menu li.has-submenu {
+  padding-inline-end: 24px;
+}
+.menu-ui.menu-ui.menu-ui.menu li.has-submenu::after {
+  inset-inline-end: 10px;
+}
+.menu-ui.menu-ui.menu-ui.menu li.radio.checked::before,
+.menu-ui.menu-ui.menu-ui.menu li.checkbox.checked::before {
+  inset-inline-start: 10px;
+}
