@@ -480,7 +480,11 @@ export default class InContentPanel {
     // from both the sidebar and the content area, because all contents
     // of the browser window can be scaled on a high-DPI display by the
     // platform.
-    const isResistFingerprintingMode = window.mozInnerScreenY == window.screenY;
+    // window.mozInnerScreenY is Firefox-only: it becomes same to window.screenY
+    // if privacy.resistFingerprinting=true, and it does not exist on Chrome.
+    // In both cases we cannot know the real offset from the window edge, thus
+    // we fall back to the fixedOffsetTop based calculation.
+    const isResistFingerprintingMode = !('mozInnerScreenY' in window) || window.mozInnerScreenY == window.screenY;
     const devicePixelRatio = window.devicePixelRatio; // ((widthInOuterWorld || window.innerWidth) / window.innerWidth);
     this.log(`${this.type} updateUI: isResistFingerprintingMode `, isResistFingerprintingMode, { devicePixelRatio });
     // But window.devicePixelRatio is not available if privacy.resistFingerprinting=true,

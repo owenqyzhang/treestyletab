@@ -404,7 +404,7 @@ Tab.onUpdated.addListener((tab, changeInfo) => {
           if (url.startsWith(Constants.kGROUP_TAB_URI))
             return;
           // Detect group tab from different session - which can have different UUID for the URL.
-          const PREFIX_REMOVER = /^moz-extension:\/\/[^\/]+/;
+          const PREFIX_REMOVER = /^(?:moz|chrome)-extension:\/\/[^\/]+/;
           const pathPart = url.replace(PREFIX_REMOVER, '');
           if (states.includes(Constants.kTAB_STATE_GROUP_TAB) &&
               pathPart.split('?')[0] == Constants.kGROUP_TAB_URI.replace(PREFIX_REMOVER, '')) {
@@ -477,10 +477,12 @@ export async function clearTemporaryState(tab) {
     CrossContextMessaging.sendMessage(tab.id, {
       type: 'treestyletab:clear-temporary-state',
     }).catch(ApiTabs.createErrorHandler()),
-    browser.tabs.executeScript(tab.id, { // failsafe
-      runAt: 'document_start',
-      code:  `history.replaceState({}, document.title, ${JSON.stringify(url.href)});`,
-    }).catch(ApiTabs.createErrorHandler()),
+    browser.scripting.executeScript({ // failsafe
+      target: { tabId: tab.id },
+      injectImmediately: true,
+      func: href => history.replaceState({}, document.title, href),
+      args: [url.href],
+    }).catch(_error => {}), // Chrome disallows scripting into extension pages: rely on the messaging above.
   ]);
   tab.url = url.href;
 }
@@ -565,10 +567,12 @@ Tab.onPinned.addListener(async tab => {
         type: 'treestyletab:replace-state-url',
         url:  url.href,
       }).catch(ApiTabs.createErrorHandler()),
-      browser.tabs.executeScript(tab.id, { // failsafe
-        runAt: 'document_start',
-        code:  `history.replaceState({}, document.title, ${JSON.stringify(url.href)});`,
-      }).catch(ApiTabs.createErrorHandler()),
+      browser.scripting.executeScript({ // failsafe
+        target: { tabId: tab.id },
+        injectImmediately: true,
+        func: href => history.replaceState({}, document.title, href),
+        args: [url.href],
+      }).catch(_error => {}), // Chrome disallows scripting into extension pages: rely on the messaging above.
     ]);
     await CrossContextMessaging.sendMessage(tab.id, {
       type: 'treestyletab:update-tree',

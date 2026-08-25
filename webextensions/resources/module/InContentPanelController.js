@@ -70,6 +70,12 @@ import InContentPanel from './InContentPanel.js';
 
 const KEY_CLOSED_CONTAINER_TYPE = 'closed-container-type';
 
+// Chrome (MV3) has no tabs.executeScript({code}), so we cannot inject the
+// MANAGER and the IMPL into web contents dynamically. In such environments
+// this controller always reports "cannot render in content" and callers
+// fall back to the in-sidebar UI.
+const CAN_INJECT_IN_CONTENT_UI = typeof browser.tabs?.executeScript == 'function';
+
 export default class InContentPanelController {
   constructor({
     // required
@@ -89,7 +95,7 @@ export default class InContentPanelController {
     this.log             = logger || ((...messages) => console.log(...messages));
     this.shouldLog       = shouldLog;
     this.canRenderInSidebar      = canRenderInSidebar;
-    this.canRenderInContent      = canRenderInContent;
+    this.canRenderInContent      = CAN_INJECT_IN_CONTENT_UI ? canRenderInContent : false;
     this.shouldFallbackToSidebar = shouldFallbackToSidebar;
     this.canSendPossibleExpiredMessage = canSendPossibleExpiredMessage || (message => message.type != `treestyletab:${this.type}:show`);
     this.UIClass         = UIClass;
@@ -581,8 +587,10 @@ export default class InContentPanelController {
         ...(messageParams || {}),
         anchorTabRect,
         /* These information is used to calculate offset of the sidebar header */
-        offsetTop:  window.mozInnerScreenY - window.screenY,
-        offsetLeft: window.mozInnerScreenX - window.screenX,
+        /* window.mozInnerScreenX/Y are Firefox-only: fall back to zero offset
+           on Chrome, then the IMPL uses fixedOffsetTop instead. */
+        offsetTop:  (window.mozInnerScreenY ?? window.screenY) - window.screenY,
+        offsetLeft: (window.mozInnerScreenX ?? window.screenX) - window.screenX,
         align:      mayBeRight ? 'right' : 'left',
         rtl:        isRTL(),
         scale:      1 / window.devicePixelRatio,

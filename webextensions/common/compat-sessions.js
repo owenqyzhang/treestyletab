@@ -233,26 +233,31 @@ async function updateRecentlyClosedSnapshot() {
   }
 }
 
+// Case 1: lazily restored startup tabs. Must run synchronously enough
+// that TST's getTabValue polling (which starts right at onCreated) sees
+// the value on its first reads.
+function tryReattachStartupLeftovers(tab) {
+  const url = tabUrl(tab);
+  if (!url || !mStartupLeftovers ||
+      Date.now() - mStartupTimestamp >= STARTUP_LEFTOVER_LIFETIME_MSEC)
+    return false;
+  const index = mStartupLeftovers.findIndex(entry => entry.url == url);
+  if (index < 0)
+    return false;
+  const [entry] = mStartupLeftovers.splice(index, 1);
+  if (mStartupLeftovers.length == 0)
+    mStartupLeftovers = null;
+  if (!mTabValues.has(tab.id)) {
+    mTabValues.set(tab.id, entry.values);
+    markDirty();
+  }
+  return true;
+}
+
 async function tryReattachValuesToRestoredTab(tab) {
   const url = tabUrl(tab);
   if (!url)
     return;
-
-  // Case 1: lazily restored startup tabs.
-  if (mStartupLeftovers &&
-      Date.now() - mStartupTimestamp < STARTUP_LEFTOVER_LIFETIME_MSEC) {
-    const index = mStartupLeftovers.findIndex(entry => entry.url == url);
-    if (index > -1) {
-      const [entry] = mStartupLeftovers.splice(index, 1);
-      if (mStartupLeftovers.length == 0)
-        mStartupLeftovers = null;
-      if (!mTabValues.has(tab.id)) {
-        mTabValues.set(tab.id, entry.values);
-        markDirty();
-      }
-      return;
-    }
-  }
 
   // Case 2: a recently closed tab was restored. Detect it by diffing the
   // recently-closed list: the restored entry disappears from it.
@@ -294,16 +299,22 @@ function listen() {
   chrome.tabs.onCreated.addListener(tab => {
     if (tabUrl(tab))
       mTabUrls.set(tab.id, tabUrl(tab));
-    // Delay a little: session restore metadata may not be up to date
-    // immediately.
+    if (tryReattachStartupLeftovers(tab))
+      return;
+    // Delay a little: the recently-closed sessions metadata may not be
+    // up to date immediately after a restore.
     setTimeout(() => {
       tryReattachValuesToRestoredTab(tab);
     }, 250);
   });
 
-  chrome.tabs.onUpdated.addListener((tabId, changeInfo, _tab) => {
-    if (changeInfo.url)
+  chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    if (changeInfo.url) {
       mTabUrls.set(tabId, changeInfo.url);
+      // Lazily restored tabs may receive their URL only after creation.
+      if (!mTabValues.has(tabId))
+        tryReattachStartupLeftovers(tab);
+    }
   });
 
   chrome.tabs.onRemoved.addListener((tabId, _removeInfo) => {

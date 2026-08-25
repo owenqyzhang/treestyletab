@@ -157,6 +157,10 @@ export function isRTL() {
 }
 
 export function isRightside() {
+  // mozInnerScreenX is Firefox-only and `window` does not exist in the MV3
+  // service worker: fall back to a config/RTL based guess on Chrome.
+  if (typeof window == 'undefined' || window.mozInnerScreenX === undefined)
+    return configs.sidebarPosition == Constants.kTABBAR_POSITION_INVERTED || isRTL();
   return window.mozInnerScreenX - window.screenX > (window.outerWidth - window.innerWidth) / 2;
 }
 
@@ -396,7 +400,7 @@ export const configs = new Configs({
   autoAttachOnAnyOtherTrigger:                            Constants.kNEWTAB_DO_NOTHING,
   guessNewOrphanTabAsOpenedByNewTabCommand:               true,
   guessNewOrphanTabAsOpenedByNewTabCommandTitle:          browser.i18n.getMessage('guessNewOrphanTabAsOpenedByNewTabCommandTitle'),
-  guessNewOrphanTabAsOpenedByNewTabCommandUrl:            'about:newtab|about:privatebrowsing',
+  guessNewOrphanTabAsOpenedByNewTabCommandUrl:            'about:newtab|about:privatebrowsing|chrome://newtab/|chrome://new-tab-page/',
   inheritContextualIdentityToChildTabMode:                Constants.kCONTEXTUAL_IDENTITY_DEFAULT,
   inheritContextualIdentityToSameSiteOrphanMode:          Constants.kCONTEXTUAL_IDENTITY_FROM_LAST_ACTIVE,
   inheritContextualIdentityToTabsFromExternalMode:        Constants.kCONTEXTUAL_IDENTITY_DEFAULT,
@@ -555,7 +559,7 @@ export const configs = new Configs({
   syncDevicesLocalCache:               {},
   syncDeviceExpirationDays:            14,
   // Must be same to "services.sync.engine.tabs.filteredUrls"
-  syncUnsendableUrlPattern:            '^(about:.*|resource:.*|chrome:.*|wyciwyg:.*|file:.*|blob:.*|moz-extension:.*)$',
+  syncUnsendableUrlPattern:            '^(about:.*|resource:.*|chrome:.*|chrome-extension:.*|wyciwyg:.*|file:.*|blob:.*|moz-extension:.*)$',
   syncLastMessageTimestamp:            0,
   syncReceivedTabsNotificationTimeout: 20 * 1000,
   syncSentTabsNotificationTimeout:     5 * 1000,
@@ -763,7 +767,10 @@ function joinChunkedStrings(chunks) {
 
 
 shouldApplyAnimation.onChanged = new EventListenerManager();
-shouldApplyAnimation.prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+// no matchMedia in the MV3 service worker: fall back to an inert stub there
+shouldApplyAnimation.prefersReducedMotion = (typeof window != 'undefined' && window.matchMedia) ?
+  window.matchMedia('(prefers-reduced-motion: reduce)') :
+  { matches: false, addListener() {}, addEventListener() {} };
 shouldApplyAnimation.prefersReducedMotion.addListener(_event => {
   shouldApplyAnimation.onChanged.dispatch(shouldApplyAnimation());
 });
@@ -888,7 +895,10 @@ export async function wait(task = 0, timeout = 0) {
 
 export function nextFrame() {
   return new Promise((resolve, _reject) => {
-    window.requestAnimationFrame(resolve);
+    if (typeof window != 'undefined')
+      window.requestAnimationFrame(resolve);
+    else // no animation frames in the MV3 service worker
+      setTimeout(resolve, 16);
   });
 }
 
@@ -951,6 +961,10 @@ function onNotificationClosed(notificationId) {
 browser.notifications?.onClosed.addListener(onNotificationClosed);
 
 export async function notify({ icon, title, message, timeout, url } = {}) {
+  // Chrome's notifications API cannot rasterize SVG icons, so fall back to the default PNG.
+  const isChrome = typeof chrome != 'undefined' && !!chrome.sidePanel;
+  if (isChrome && icon && /\.svg([#?]|$)/.test(icon))
+    icon = null;
   const id = await browser.notifications.create({
     type:    'basic',
     iconUrl: icon || Constants.kNOTIFICATION_DEFAULT_ICON,

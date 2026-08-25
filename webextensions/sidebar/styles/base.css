@@ -396,7 +396,7 @@ body {
 
 
 #background {
-  background-color: -moz-dialog; /* This is required to cover dummy elements. See also: https://github.com/piroor/treestyletab/issues/1703#issuecomment-354646405 */
+  background-color: Canvas; /* This is required to cover dummy elements. See also: https://github.com/piroor/treestyletab/issues/1703#issuecomment-354646405 */
   pointer-events: none;
   z-index: var(--background-z-index);
 }
@@ -465,7 +465,7 @@ ul {
 }
 
 #dummy-favicon-size-box {
-  background: -moz-dialog;
+  background: Canvas;
   display: inline-block;
   width: 1em;
   height: 1em;
@@ -476,7 +476,7 @@ ul {
 }
 
 #dummy-tab-color-box {
-  background: -moz-dialog;
+  background: Canvas;
 }
 
 #dummy-highlight-color-box {
@@ -1669,6 +1669,7 @@ iframe#subpanel {
   color: var(--tab-text);
   display: flex;
   flex-direction: row;
+  font: menu; /* fallback for Chrome */
   font: -moz-button;
   padding-block: 0;
   padding-inline: 0.5em 0;

@@ -53,7 +53,11 @@ for (const permissions of [ALL_URLS, BOOKMARKS, CLIPBOARD_READ, TAB_HIDE]) {
 }
 
 
-const CUSTOM_PANEL_AVAILABLE_URLS_MATCHER = new RegExp(`^((https?|data):|moz-extension://${window.location.host}/)`);
+// Built from runtime.getURL() instead of window.location, because there is no
+// `window` in the MV3 service worker and the scheme differs on Chrome
+// (chrome-extension:) and Firefox (moz-extension:).
+const SELF_URL_PREFIX = browser.runtime.getURL('/');
+const CUSTOM_PANEL_AVAILABLE_URLS_MATCHER = new RegExp(`^((https?|data):|${SELF_URL_PREFIX.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`);
 
 export async function canInjectScriptToTab(tab) {
   if (!tab ||
@@ -258,8 +262,8 @@ export function bindToCheckbox(permissions, checkbox, options = {}) {
 
       log('fallback to the failsafe method');
       configs.requestingPermissions = permissions;
-      browser.browserAction.setBadgeText({ text: '!' });
-      browser.browserAction.setPopup({ popup: '' });
+      browser.action.setBadgeText({ text: '!' });
+      browser.action.setPopup({ popup: '' });
 
       notify({
         title:   browser.i18n.getMessage('config_requestPermissions_fallbackToToolbarButton_title'),
@@ -316,8 +320,8 @@ export function bindToClickable(permissions, node, { onChanged } = {}) {
       }
 
       configs.requestingPermissions = permissions;
-      browser.browserAction.setBadgeText({ text: '!' });
-      browser.browserAction.setPopup({ popup: '' });
+      browser.action.setBadgeText({ text: '!' });
+      browser.action.setPopup({ popup: '' });
 
       notify({
         title:   browser.i18n.getMessage('config_requestPermissions_fallbackToToolbarButton_title'),
@@ -340,7 +344,7 @@ export function requestPostProcess() {
   configs.requestingPermissions = null;
   configs.requestingPermissionsNatively = permissions;
 
-  browser.browserAction.setBadgeText({ text: '' });
+  browser.action.setBadgeText({ text: '' });
   browser.permissions.request(permissions)
     .then(granted => {
       log('permission requested: ', permissions, granted);

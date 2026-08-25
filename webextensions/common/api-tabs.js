@@ -21,7 +21,9 @@ function isMissingTabError(error) {
   return (
     error &&
     error.message &&
-    error.message.includes('Invalid tab ID:')
+    (error.message.includes('Invalid tab ID:') || // Firefox (also synthesized by common/unique-id.js)
+     /No tab with id:/i.test(error.message) || // Chrome
+     /No window with id:/i.test(error.message)) // Chrome
   );
 }
 export function handleMissingTabError(error) {
@@ -48,7 +50,8 @@ export function isMissingHostPermissionError(error) {
   return (
     error &&
     error.message &&
-    error.message.includes('Missing host permission for the tab')
+    (error.message.includes('Missing host permission for the tab') || // Firefox
+     /Cannot access contents|cannot be scripted|Cannot access a chrome/i.test(error.message)) // Chrome
   );
 }
 export function handleMissingHostPermissionError(error) {

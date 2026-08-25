@@ -130,6 +130,7 @@ async function onShortcutCommand(command) {
 
   switch (command) {
     case '_execute_browser_action':
+    case '_execute_action': // Chrome MV3
       return;
 
     case 'reloadTree':
@@ -327,7 +328,7 @@ async function onShortcutCommand(command) {
             type:     Constants.kCOMMAND_GET_ABOVE_TAB,
             windowId: activeTab.windowId,
             tabId:    activeTab.id,
-          });
+          }).catch(() => null); // the sidebar can be closed while sending
           log(`simulateUpOnTree: nextActiveId = ${nextActiveId}`);
           const nextActive = (
             Tab.get(nextActiveId) ||
@@ -353,7 +354,7 @@ async function onShortcutCommand(command) {
             type:     Constants.kCOMMAND_GET_BELOW_TAB,
             windowId: activeTab.windowId,
             tabId:    activeTab.id,
-          });
+          }).catch(() => null); // the sidebar can be closed while sending
           log(`simulateDownOnTree: nextActiveId = ${nextActiveId}`);
           const nextActive = (
             Tab.get(nextActiveId) ||
@@ -379,7 +380,7 @@ async function onShortcutCommand(command) {
             type:     Constants.kCOMMAND_GET_LEFT_TAB,
             windowId: activeTab.windowId,
             tabId:    activeTab.id,
-          });
+          }).catch(() => null); // the sidebar can be closed while sending
           log(`simulateLeftOnTree: nextActiveId = ${nextActiveId}`);
           TabsInternalOperation.activateTab(Tab.get(nextActiveId), {
             silently: true,
@@ -404,7 +405,7 @@ async function onShortcutCommand(command) {
             type:     Constants.kCOMMAND_GET_RIGHT_TAB,
             windowId: activeTab.windowId,
             tabId:    activeTab.id,
-          });
+          }).catch(() => null); // the sidebar can be closed while sending
           log(`simulateRightOnTree: nextActiveId = ${nextActiveId}`);
           TabsInternalOperation.activateTab(Tab.get(nextActiveId), {
             silently: true,
@@ -542,7 +543,7 @@ async function isSidebarPositionInverted(windowId) {
   const position = await browser.runtime.sendMessage({
     type: Constants.kCOMMAND_GET_SIDEBAR_POSITION,
     windowId,
-  });
+  }).catch(() => null); // the sidebar can be closed while sending
   return position == Constants.kTABBAR_POSITION_INVERTED;
 }
 

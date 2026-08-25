@@ -447,10 +447,13 @@ export const kIN_CONTENT_PANEL_RENDER_IN_ANYWHERE = kIN_CONTENT_PANEL_RENDER_IN_
 
 export const kAGGRESSIVE_OPENER_TAB_DETECTION_RULES_WITH_URL = [
   { opener: /^about:addons/,
-    child:  /^https:\/\/addons.mozilla.org\/([^\/]+\/)?[^\/]+\/search\// }
+    child:  /^https:\/\/addons.mozilla.org\/([^\/]+\/)?[^\/]+\/search\// },
+  { opener: /^chrome:\/\/extensions/,
+    child:  /^https:\/\/chromewebstore\.google\.com\// }
 ];
 
-export const kNOTIFICATION_DEFAULT_ICON = '/resources/64x64.svg#default-bright';
+// PNG instead of SVG, because Chrome's notifications API cannot rasterize SVG icons.
+export const kNOTIFICATION_DEFAULT_ICON = '/resources/64x64.png';
 
 // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/storage/sync
 // Use 6 * 1024 instead of 8 * 1024 (max of the quota) for safety.
@@ -459,5 +462,6 @@ export const kSYNC_STORAGE_SAFE_QUOTA = 6 * 1024;
 
 export const kSYNC_DATA_TYPE_TABS = 'tabs';
 
-export const IS_BACKGROUND = window.location.href.startsWith(browser.runtime.getURL('background/background.html'));
-export const IS_SIDEBAR    = window.location.href.startsWith(browser.runtime.getURL('sidebar/sidebar.html'));
+// In the MV3 service worker there is no `window`, so its absence means "background".
+export const IS_BACKGROUND = typeof window == 'undefined' || window.location.href.startsWith(browser.runtime.getURL('background/background.html'));
+export const IS_SIDEBAR    = typeof window != 'undefined' && window.location.href.startsWith(browser.runtime.getURL('sidebar/sidebar.html'));

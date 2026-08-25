@@ -7,7 +7,7 @@
 
 :root {
   --tab-dropmarker-size: 0.15em;
-  --tab-dropmarker: -moz-fieldtext;
+  --tab-dropmarker: FieldText;
 }
 
 tab-item.dragging {

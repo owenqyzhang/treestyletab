@@ -1664,6 +1664,7 @@ export class Tab extends TreeItem {
           this._safeSearchBookmarksWithUrl(`https://www.${url}`),
           this._safeSearchBookmarksWithUrl(`ftp://${url}`),
           this._safeSearchBookmarksWithUrl(`moz-extension://${url}`),
+          this._safeSearchBookmarksWithUrl(`chrome-extension://${url}`),
           this._safeSearchBookmarksWithUrl(url), // about:* and so on
         ]);
         log(`promisedPossibleOpenerBookmarks for tab ${this.id} (${url}): `, possibleBookmarks);
@@ -3050,7 +3051,9 @@ export class Tab extends TreeItem {
           cache.effectiveFavIconUrls[this.raw?.id] :
           this.raw?.favIconUrl?.startsWith('data:') ?
             this.raw?.favIconUrl :
-            TabFavIconHelper.getLastEffectiveFavIconURL(this.raw).catch(ApiTabs.handleMissingTabError)
+            typeof document == 'undefined' ? // TabFavIconHelper requires DOM, unavailable in the service worker
+              this.raw?.favIconUrl :
+              TabFavIconHelper.getLastEffectiveFavIconURL(this.raw).catch(ApiTabs.handleMissingTabError)
     );
 
     if (!(this.raw.id in cache.effectiveFavIconUrls))
@@ -3124,10 +3127,14 @@ export class Tab extends TreeItem {
   }
 
   get safeFavIconUrl() {
-    return TabFavIconHelper.getSafeFaviconUrl(
-      this.raw.favIconUrl ||
-      browser.runtime.getURL('/resources/icons/defaultFavicon.svg')
-    );
+    const favIconUrl = this.raw.favIconUrl ||
+      browser.runtime.getURL('/resources/icons/defaultFavicon.svg');
+    try {
+      return TabFavIconHelper.getSafeFaviconUrl(favIconUrl);
+    }
+    catch(_error) { // TabFavIconHelper requires DOM, unavailable in the service worker
+      return favIconUrl;
+    }
   }
 
 
@@ -3765,7 +3772,7 @@ export class Tab extends TreeItem {
       tabs:       TabsStore.getTabsMap(TabsStore.livingTabsInWindow, windowId),
       living:     true,
       states:     [Constants.kTAB_STATE_RESTORED, false],
-      attributes: [Constants.kCURRENT_URI, new RegExp(`^(|${userNewTabUrls}|about:newtab|about:blank|about:privatebrowsing)$`)],
+      attributes: [Constants.kCURRENT_URI, new RegExp(`^(|${userNewTabUrls}|about:newtab|about:blank|about:privatebrowsing|chrome://newtab/|chrome://new-tab-page/)$`)],
       ...options
     });
   }

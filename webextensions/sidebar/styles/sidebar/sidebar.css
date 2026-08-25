@@ -341,7 +341,7 @@ tab-item:not(.faviconized)[data-drop-position="before"] tab-item-substance.split
   tab-item:not(.active):not(#dummy-tab)
   tab-item-substance:not(:hover)
   tab-closebox {
-  display: -moz-box !important;
+  display: flex !important;
   visibility: collapse !important;
 }
 

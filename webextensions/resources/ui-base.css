@@ -22,6 +22,7 @@ body {
   padding-block: 0;
   padding-inline: 0;
   -moz-user-select: none;
+  user-select: none;
 
   * {
     box-sizing: border-box;

@@ -11,8 +11,8 @@
 
 const TabFavIconHelper = {
   LAST_EFFECTIVE_FAVICON: 'last-effective-favIcon',
-  VALID_FAVICON_PATTERN: /^(about|app|chrome|data|file|ftp|https?|moz-extension|resource):/,
-  DRAWABLE_FAVICON_PATTERN: /^(https?|moz-extension|resource):/,
+  VALID_FAVICON_PATTERN: /^(about|app|chrome|data|file|ftp|https?|moz-extension|chrome-extension|resource):/,
+  DRAWABLE_FAVICON_PATTERN: /^(https?|moz-extension|chrome-extension|resource):/,
 
   // original: chrome://browser/content/aboutlogins/icons/favicon.svg
   FAVICON_LOCKWISE: `
@@ -63,14 +63,14 @@ data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACGFjVEw
   // original: chrome://browser/skin/controlcenter/dashboard.svg
   FAVICON_DASHBOARD: `
 <svg data-name="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
-  <path fill="context-fill" fill-opacity="context-fill-opacity" d="M15 12H4a2 2 0 0 1-2-2V3a1 1 0 0 0-2 0v7a4 4 0 0 0 4 4h11a1 1 0 0 0 0-2z"/>
-  <path fill="context-fill" fill-opacity="context-fill-opacity" d="M4 11a1 1 0 0 0 1-1V8a1 1 0 0 0-2 0v2a1 1 0 0 0 1 1zM7 11a1 1 0 0 0 1-1V4a1 1 0 0 0-2 0v6a1 1 0 0 0 1 1zM10 11a1 1 0 0 0 1-1V6a1 1 0 0 0-2 0v4a1 1 0 0 0 1 1zM13 11a1 1 0 0 0 1-1V7a1 1 0 0 0-2 0v3a1 1 0 0 0 1 1z"/>
+  <path fill="#5b5b66" d="M15 12H4a2 2 0 0 1-2-2V3a1 1 0 0 0-2 0v7a4 4 0 0 0 4 4h11a1 1 0 0 0 0-2z"/>
+  <path fill="#5b5b66" d="M4 11a1 1 0 0 0 1-1V8a1 1 0 0 0-2 0v2a1 1 0 0 0 1 1zM7 11a1 1 0 0 0 1-1V4a1 1 0 0 0-2 0v6a1 1 0 0 0 1 1zM10 11a1 1 0 0 0 1-1V6a1 1 0 0 0-2 0v4a1 1 0 0 0 1 1zM13 11a1 1 0 0 0 1-1V7a1 1 0 0 0-2 0v3a1 1 0 0 0 1 1z"/>
 </svg>
 `,
   // original: chrome://browser/skin/developer.svg
   FAVICON_DEVELOPER: `
 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
-  <path fill="context-fill" fill-opacity="context-fill-opacity" d="M14.555 3.2l-2.434 2.436a1.243 1.243 0 1 1-1.757-1.757L12.8 1.445A3.956 3.956 0 0 0 11 1a3.976 3.976 0 0 0-3.434 6.02l-6.273 6.273a1 1 0 1 0 1.414 1.414L8.98 8.434A3.96 3.96 0 0 0 11 9a4 4 0 0 0 4-4 3.956 3.956 0 0 0-.445-1.8z"/>
+  <path fill="#5b5b66" d="M14.555 3.2l-2.434 2.436a1.243 1.243 0 1 1-1.757-1.757L12.8 1.445A3.956 3.956 0 0 0 11 1a3.976 3.976 0 0 0-3.434 6.02l-6.273 6.273a1 1 0 1 0 1.414 1.414L8.98 8.434A3.96 3.96 0 0 0 11 9a4 4 0 0 0 4-4 3.956 3.956 0 0 0-.445-1.8z"/>
 </svg>
 `,
   // original: chrome://browser/skin/privatebrowsing/favicon.svg
@@ -92,37 +92,37 @@ data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACGFjVEw
   // original: chrome://browser/skin/window.svg
   FAVICON_WINDOW: `
 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
-  <path fill="context-fill" fill-opacity="context-fill-opacity" d="M13 1H3a3 3 0 0 0-3 3v8a3 3 0 0 0 3 3h11a2 2 0 0 0 2-2V4a3 3 0 0 0-3-3zm1 11a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6h12zm0-7H2V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1z"/>
+  <path fill="#5b5b66" d="M13 1H3a3 3 0 0 0-3 3v8a3 3 0 0 0 3 3h11a2 2 0 0 0 2-2V4a3 3 0 0 0-3-3zm1 11a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6h12zm0-7H2V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1z"/>
 </svg>
 `,
   // original: chrome://devtools/skin/images/profiler-stopwatch.svg
   FAVICON_PROFILER: `
 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
-  <path fill="context-fill" fill-opacity="context-fill-opacity" d="M10.85 6.85a.5.5 0 0 0-.7-.7l-2.5 2.5.7.7 2.5-2.5zM8 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM5 1a1 1 0 0 1 1-1h4a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1zM8 4a5 5 0 1 0 0 10A5 5 0 0 0 8 4zM1 9a7 7 0 1 1 14 0A7 7 0 0 1 1 9z"/>
+  <path fill="#5b5b66" d="M10.85 6.85a.5.5 0 0 0-.7-.7l-2.5 2.5.7.7 2.5-2.5zM8 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM5 1a1 1 0 0 1 1-1h4a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1zM8 4a5 5 0 1 0 0 10A5 5 0 0 0 8 4zM1 9a7 7 0 1 1 14 0A7 7 0 0 1 1 9z"/>
 </svg>
 `,
   // original: chrome://global/skin/icons/performance.svg
   FAVICON_PERFORMANCE: `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
-  <path fill="context-fill" d="M8 1a8 8 0 0 0-8 8 7.89 7.89 0 0 0 .78 3.43 1 1 0 0 0 .9.57.94.94 0 0 0 .43-.1 1 1 0 0 0 .47-1.33A6.07 6.07 0 0 1 2 9a6 6 0 0 1 12 0 5.93 5.93 0 0 1-.59 2.57 1 1 0 0 0 1.81.86A7.89 7.89 0 0 0 16 9a8 8 0 0 0-8-8z"/>
-  <path fill="context-fill" d="M11.77 7.08a.5.5 0 0 0-.69.15L8.62 11.1A2.12 2.12 0 0 0 8 11a2 2 0 0 0 0 4 2.05 2.05 0 0 0 1.12-.34 2.31 2.31 0 0 0 .54-.54 2 2 0 0 0 0-2.24 2.31 2.31 0 0 0-.2-.24l2.46-3.87a.5.5 0 0 0-.15-.69z"/>
+  <path fill="#5b5b66" d="M8 1a8 8 0 0 0-8 8 7.89 7.89 0 0 0 .78 3.43 1 1 0 0 0 .9.57.94.94 0 0 0 .43-.1 1 1 0 0 0 .47-1.33A6.07 6.07 0 0 1 2 9a6 6 0 0 1 12 0 5.93 5.93 0 0 1-.59 2.57 1 1 0 0 0 1.81.86A7.89 7.89 0 0 0 16 9a8 8 0 0 0-8-8z"/>
+  <path fill="#5b5b66" d="M11.77 7.08a.5.5 0 0 0-.69.15L8.62 11.1A2.12 2.12 0 0 0 8 11a2 2 0 0 0 0 4 2.05 2.05 0 0 0 1.12-.34 2.31 2.31 0 0 0 .54-.54 2 2 0 0 0 0-2.24 2.31 2.31 0 0 0-.2-.24l2.46-3.87a.5.5 0 0 0-.15-.69z"/>
 </svg>
 `,
   // original: chrome://global/skin/icons/warning.svg
   FAVICON_WARNING: `
 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
-  <path fill="context-fill" fill-opacity="context-fill-opacity" d="M14.742 12.106L9.789 2.2a2 2 0 0 0-3.578 0l-4.953 9.91A2 2 0 0 0 3.047 15h9.905a2 2 0 0 0 1.79-2.894zM7 5a1 1 0 0 1 2 0v4a1 1 0 0 1-2 0zm1 8.25A1.25 1.25 0 1 1 9.25 12 1.25 1.25 0 0 1 8 13.25z"/>
+  <path fill="#5b5b66" d="M14.742 12.106L9.789 2.2a2 2 0 0 0-3.578 0l-4.953 9.91A2 2 0 0 0 3.047 15h9.905a2 2 0 0 0 1.79-2.894zM7 5a1 1 0 0 1 2 0v4a1 1 0 0 1-2 0zm1 8.25A1.25 1.25 0 1 1 9.25 12 1.25 1.25 0 0 1 8 13.25z"/>
 </svg>
 `,
   // original: chrome://mozapps/skin/extensions/extensionGeneric-16.svg
   FAVICON_EXTENSION: `
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="context-fill" fill-opacity="context-fill-opacity">
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#5b5b66">
   <path d="M14.5 8c-.971 0-1 1-1.75 1a.765.765 0 0 1-.75-.75V5a1 1 0 0 0-1-1H7.75A.765.765 0 0 1 7 3.25c0-.75 1-.779 1-1.75C8 .635 7.1 0 6 0S4 .635 4 1.5c0 .971 1 1 1 1.75a.765.765 0 0 1-.75.75H1a1 1 0 0 0-1 1v2.25A.765.765 0 0 0 .75 8c.75 0 .779-1 1.75-1C3.365 7 4 7.9 4 9s-.635 2-1.5 2c-.971 0-1-1-1.75-1a.765.765 0 0 0-.75.75V15a1 1 0 0 0 1 1h3.25a.765.765 0 0 0 .75-.75c0-.75-1-.779-1-1.75 0-.865.9-1.5 2-1.5s2 .635 2 1.5c0 .971-1 1-1 1.75a.765.765 0 0 0 .75.75H11a1 1 0 0 0 1-1v-3.25a.765.765 0 0 1 .75-.75c.75 0 .779 1 1.75 1 .865 0 1.5-.9 1.5-2s-.635-2-1.5-2z"/>
 </svg>
 `,
   // original: globe-16.svg
   FAVICON_GLOBE: `
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="context-fill" fill-opacity="context-fill-opacity">
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="#5b5b66">
   <path d="M8.5 1a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15zm2.447 1.75a6.255 6.255 0 0 1 3.756 5.125l-2.229 0A9.426 9.426 0 0 0 10.54 2.75l.407 0zm-2.049 0a8.211 8.211 0 0 1 2.321 5.125l-5.438 0A8.211 8.211 0 0 1 8.102 2.75l.796 0zm-2.846 0 .408 0a9.434 9.434 0 0 0-1.934 5.125l-2.229 0A6.254 6.254 0 0 1 6.052 2.75zm0 11.5a6.252 6.252 0 0 1-3.755-5.125l2.229 0A9.426 9.426 0 0 0 6.46 14.25l-.408 0zm2.05 0a8.211 8.211 0 0 1-2.321-5.125l5.437 0a8.211 8.211 0 0 1-2.321 5.125l-.795 0zm2.846 0-.409 0a9.418 9.418 0 0 0 1.934-5.125l2.229 0a6.253 6.253 0 0 1-3.754 5.125z"/>
 </svg>
 `,
@@ -436,6 +436,14 @@ data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACGFjVEw
     this._onTabUpdated = this._onTabUpdated.bind(this);
     browser.tabs.onUpdated.addListener(this._onTabUpdated);
 
+    if (typeof document == 'undefined') {
+      // Running in a service worker (Chrome MV3): no DOM is available, so
+      // we skip canvas based drawing and the unload listener. Favicon URLs
+      // are used as-is without conversion to data URIs.
+      this.canvas = null;
+      return;
+    }
+
     this.canvas = document.createElement('canvas');
     this.canvas.width = this.canvas.height = this.FAVICON_SIZE;
     this.canvas.setAttribute('style', `
@@ -475,7 +483,7 @@ data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACGFjVEw
         while (tasks.length > 0) {
           tasks.shift()();
         }
-        window.requestAnimationFrame(processOneTask);
+        (globalThis.requestAnimationFrame || (cb => setTimeout(cb, 16)))(processOneTask);
       }
     };
     processOneTask();
@@ -622,7 +630,9 @@ data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACGFjVEw
 
       onLoad = async foundFavIconUrl => {
         let dataURL = null;
-        if (this.DRAWABLE_FAVICON_PATTERN.test(favIconUrl)) {
+        if (loader &&
+            this.canvas &&
+            this.DRAWABLE_FAVICON_PATTERN.test(favIconUrl)) {
           const context = this.canvas.getContext('2d');
           context.clearRect(0, 0, this.FAVICON_SIZE, this.FAVICON_SIZE);
           context.drawImage(loader, 0, 0, this.FAVICON_SIZE, this.FAVICON_SIZE);
@@ -661,6 +671,12 @@ data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACGFjVEw
       if (!favIconUrl ||
           !this.VALID_FAVICON_PATTERN.test(favIconUrl)) {
         onError();
+        return;
+      }
+      if (typeof Image == 'undefined') {
+        // Running in a service worker (Chrome MV3): we cannot load the image
+        // for validation, so trust the given favicon URL as-is.
+        onLoad();
         return;
       }
       loader = new Image();

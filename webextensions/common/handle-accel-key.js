@@ -9,6 +9,10 @@
   if (window.handleAccelKeyLoaded)
     return;
 
+  // Content script without the compat shim: fall back to chrome if the
+  // native "browser" alias is unavailable (Chrome older than 136).
+  const browser = globalThis.browser || globalThis.chrome;
+
   function stringifySoloModifier(event) {
     switch (event.key) {
       case 'Alt':

@@ -69,6 +69,11 @@ export const onSubtreeCollapsedStateChanging = new EventListenerManager();
 export const onSubtreeCollapsedStateChanged  = new EventListenerManager();
 
 
+// Chrome rejects a self-referential openerTabId (the Firefox workaround to
+// "clear" the opener), and it clears the opener automatically when the
+// opener tab is closed, so we skip the clearing update there.
+const mCanClearOpenerTabId = browser.runtime.getURL('').startsWith('moz-extension:');
+
 const mUnattachableTabIds = new Set();
 
 export function markTabIdAsUnattachable(id) {
@@ -590,8 +595,9 @@ export function detachTab(child, options = {}) {
       configs.syncParentTabAndOpenerTab) {
     log(`openerTabId of ${child.id} is cleared by TST!: ${child.openerTabId} (original)`, stack());
     child.openerTabId = child.id;
-    browser.tabs.update(child.id, { openerTabId: child.id }) // set self id instead of null, because it requires any valid tab id...
-      .catch(ApiTabs.createErrorHandler(ApiTabs.handleMissingTabError));
+    if (mCanClearOpenerTabId)
+      browser.tabs.update(child.id, { openerTabId: child.id }) // set self id instead of null, because it requires any valid tab id...
+        .catch(ApiTabs.createErrorHandler(ApiTabs.handleMissingTabError));
   }
   child.$TST.invalidateCache();
 
@@ -840,8 +846,9 @@ export async function detachAllChildren(
       else if (child.openerTabId) {
         log(`openerTabId of ${child.id} is cleared by TST!: ${child.openerTabId} (original)`, stack());
         child.openerTabId = child.id;
-        browser.tabs.update(child.id, { openerTabId: child.id })
-          .catch(ApiTabs.createErrorHandler(ApiTabs.handleMissingTabError));
+        if (mCanClearOpenerTabId)
+          browser.tabs.update(child.id, { openerTabId: child.id })
+            .catch(ApiTabs.createErrorHandler(ApiTabs.handleMissingTabError));
       }
     }
 

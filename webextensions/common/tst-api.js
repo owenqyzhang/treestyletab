@@ -544,7 +544,7 @@ export async function initAsBackend() {
   const manifest = browser.runtime.getManifest();
   registerAddon(browser.runtime.id, {
     id:             browser.runtime.id,
-    internalId:     browser.runtime.getURL('').replace(/^moz-extension:\/\/([^\/]+)\/.*$/, '$1'),
+    internalId:     new URL(browser.runtime.getURL('')).hostname, // scheme-independent: moz-extension: and chrome-extension:
     icons:          manifest.icons,
     listeningTypes: [
       kNOTIFY_EXTRA_CONTENTS_CLICKED,
@@ -612,7 +612,7 @@ if (Constants.IS_BACKGROUND) {
         continue;
       mPermissionNotificationForAddon.delete(addonId);
       browser.tabs.create({
-        url: `moz-extension://${window.location.host}/options/options.html#externalAddonPermissionsGroup`
+        url: browser.runtime.getURL('options/options.html#externalAddonPermissionsGroup')
       });
       break;
     }
@@ -667,7 +667,7 @@ if (Constants.IS_BACKGROUND) {
     if (!addon) { // treat as register-self
       const message = {
         id:             sender.id,
-        internalId:     sender.url.replace(/^moz-extension:\/\/([^\/]+)\/.*$/, '$1'),
+        internalId:     new URL(sender.url).hostname, // scheme-independent: moz-extension: and chrome-extension:
         newlyInstalled: !configs.cachedExternalAddons.includes(sender.id)
       };
       registerAddon(sender.id, message);
@@ -770,7 +770,11 @@ if (Constants.IS_BACKGROUND) {
 const mPromisedOnBeforeUnload = new Promise((resolve, _reject) => {
   // If this promise doesn't do anything then there seems to be a timeout so it only works if TST is disabled within about 10 seconds after this promise is used as a response to a message. After that it will not throw an error for the waiting extension.
   // If we use the following then the returned promise will be rejected when TST is disabled even for longer times:
-  window.addEventListener('beforeunload', () => resolve());
+  // In the MV3 service worker there is no window/beforeunload; keep the promise
+  // pending forever there. Helper addons detect shutdown via sendMessage failure
+  // instead, and kWAIT_FOR_SHUTDOWN may fire spuriously on service worker restarts.
+  if (typeof window != 'undefined')
+    window.addEventListener('beforeunload', () => resolve());
 });
 
 const mWaitingShutdownMessages = new Map();
@@ -798,7 +802,7 @@ function onBackendCommand(message, sender) {
 
     case kREGISTER_SELF:
       return (async () => {
-        message.internalId = sender.url.replace(/^moz-extension:\/\/([^\/]+)\/.*$/, '$1');
+        message.internalId = new URL(sender.url).hostname; // scheme-independent: moz-extension: and chrome-extension:
         message.id = sender.id;
         message.subPanel = message.subPanel || message.subpanel || null;
         if (message.subPanel) {

@@ -62,6 +62,11 @@ if ((window.location.hash &&
 
 document.documentElement.classList.toggle('rtl', isRTL());
 
+// On Chrome, UI blocks for Firefox-only features (marked with the class
+// "firefox-only" in options.html) are hidden.
+const IS_CHROME = window.location.protocol == 'chrome-extension:';
+document.documentElement.classList.toggle('chrome', IS_CHROME);
+
 const CODEMIRROR_THEMES = `
 3024-day
 3024-night
@@ -564,6 +569,11 @@ async function importFilesToUserStyleRulesField(files) {
 }
 
 function updateThemeInformation(theme) {
+  if (!theme || !theme.colors) {
+    // e.g. on Chrome browser.theme is a stub which returns null colors.
+    document.getElementById('browserThemeCustomRulesBlock').style.display = 'none';
+    return;
+  }
   const rules = BrowserTheme.generateThemeRules(theme)
     .replace(/--theme-[^:]*-[0-9]+:[^;]*;\s*/g, '') /* hide alpha variations */
     .replace(/(#(?:[0-9a-f]{3,8})|(?:rgb|hsl)a?\([^\)]+\))/gi, `$1<span style="
@@ -830,42 +840,44 @@ function initPermissionOptions() {
     }
   );
 
-  Permissions.bindToCheckbox(
-    Permissions.TAB_HIDE,
-    document.querySelector('#tabHidePermissionGranted'),
-    { onChanged: async (granted) => {
-      if (granted) {
-        // try to hide/show the tab to ensure the permission is really granted
-        let activeTabs = await browser.tabs.query({ active: true, currentWindow: true });
-        if (activeTabs.length == 0)
-          activeTabs = await browser.tabs.query({ currentWindow: true });
-        const tab = await browser.tabs.create({ active: false, windowId: activeTabs[0].windowId });
-        await wait(200);
-        let aborted = false;
-        const onRemoved = tabId => {
-          if (tabId != tab.id)
-            return;
-          aborted = true;
-          browser.tabs.onRemoved.removeListener(onRemoved);
-          // eslint-disable-next-line no-use-before-define
-          browser.tabs.onUpdated.removeListener(onUpdated);
-        };
-        const onUpdated = async (tabId, changeInfo, tab) => {
-          if (tabId != tab.id ||
-              !('hidden' in changeInfo))
-            return;
-          await wait(60 * 1000);
-          if (aborted)
-            return;
-          await browser.tabs.show([tab.id]);
-          await browser.tabs.remove(tab.id);
-        };
-        browser.tabs.onRemoved.addListener(onRemoved);
-        browser.tabs.onUpdated.addListener(onUpdated);
-        await browser.tabs.hide([tab.id]);
-      }
-    }}
-  );
+  if (!IS_CHROME) { // tabHide is a Firefox-only permission and its checkbox is hidden on Chrome
+    Permissions.bindToCheckbox(
+      Permissions.TAB_HIDE,
+      document.querySelector('#tabHidePermissionGranted'),
+      { onChanged: async (granted) => {
+        if (granted) {
+          // try to hide/show the tab to ensure the permission is really granted
+          let activeTabs = await browser.tabs.query({ active: true, currentWindow: true });
+          if (activeTabs.length == 0)
+            activeTabs = await browser.tabs.query({ currentWindow: true });
+          const tab = await browser.tabs.create({ active: false, windowId: activeTabs[0].windowId });
+          await wait(200);
+          let aborted = false;
+          const onRemoved = tabId => {
+            if (tabId != tab.id)
+              return;
+            aborted = true;
+            browser.tabs.onRemoved.removeListener(onRemoved);
+            // eslint-disable-next-line no-use-before-define
+            browser.tabs.onUpdated.removeListener(onUpdated);
+          };
+          const onUpdated = async (tabId, changeInfo, tab) => {
+            if (tabId != tab.id ||
+                !('hidden' in changeInfo))
+              return;
+            await wait(60 * 1000);
+            if (aborted)
+              return;
+            await browser.tabs.show([tab.id]);
+            await browser.tabs.remove(tab.id);
+          };
+          browser.tabs.onRemoved.addListener(onRemoved);
+          browser.tabs.onUpdated.addListener(onUpdated);
+          await browser.tabs.hide([tab.id]);
+        }
+      }}
+    );
+  }
 
   for (const checkbox of document.querySelectorAll('input[type="checkbox"].require-bookmarks-permission')) {
     checkbox.addEventListener('change', onChangeBookmarkPermissionRequiredCheckboxState);

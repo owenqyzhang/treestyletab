@@ -110,7 +110,7 @@ export async function openURIInTab(uri, options = {}) {
   return tabs[0];
 }
 
-const FORBIDDEN_URL_MATCHER = /^(about|chrome|resource|file):/;
+const FORBIDDEN_URL_MATCHER = /^(about|chrome|resource|file|view-source|devtools|chrome-untrusted):/;
 const ALLOWED_URL_MATCHER = /^about:blank(\?|$)/;
 
 export async function openURIsInTabs(uris, { windowId, insertBefore, insertAfter, cookieStoreId, isOrphan, active, inBackground, discarded, groupId, opener, parent, fixPositions } = {}) {
@@ -184,7 +184,8 @@ export async function openURIsInTabs(uris, { windowId, insertBefore, insertAfter
           !params.active &&
           !('discarded' in params))
         params.discarded = true;
-      if (params.url == 'about:newtab')
+      if (params.url == 'about:newtab' ||
+          params.url == 'chrome://newtab/')
         delete params.url
       if (params.url)
         params.url = sanitizeURL(params.url);
@@ -192,7 +193,7 @@ export async function openURIsInTabs(uris, { windowId, insertBefore, insertAfter
           /^about:/.test(params.url))
         params.discarded = false; // discarded tab cannot be opened with any about: URL
       if (!params.discarded) // title cannot be set for non-discarded tabs
-        params.title = null;
+        delete params.title;
       if (opener && !params.openerTabId)
         params.openerTabId = opener.id;
       if (startIndex > -1 && !('index' in params))

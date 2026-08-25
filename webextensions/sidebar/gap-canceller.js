@@ -33,6 +33,12 @@ let mLastMozInnerScreenY = window.mozInnerScreenY;
 let mOffset              = 0;
 
 export function init() {
+  // This module works around a Firefox-only problem (bug 727668) by watching
+  // mozInnerScreenY. On Chrome there is no such visual gap and mozInnerScreenY
+  // does not exist, so we don't need to install any listener or polling.
+  if (typeof window.mozInnerScreenY != 'number')
+    return;
+
   mWindowId = TabsStore.getCurrentWindowId();
 
   browser.tabs.query({ active: true, windowId: mWindowId }).then(async tabs => {

@@ -1329,7 +1329,7 @@ export async function unloadTabs(tabs) {
 //   https://searchfox.org/mozilla-central/rev/b7b6aa5e8ffc27bc70d4c129c95adc5921766b93/browser/components/tabbrowser/content/tabbrowser.js#1983
 //   https://searchfox.org/mozilla-central/rev/b7b6aa5e8ffc27bc70d4c129c95adc5921766b93/toolkit/modules/E10SUtils.sys.mjs#394
 export function filterUnloadableTabs(tabs) {
-  return tabs.filter(tab => !tab.discarded && !/^(about|chrome):/i.test(tab.url));
+  return tabs.filter(tab => !tab.discarded && !/^(about|chrome|devtools):/i.test(tab.url));
 }
 
 export async function duplicateTab(sourceTab, options = {}) {
@@ -1436,19 +1436,27 @@ export async function openTabsInWindow(tabs) {
 
 
 export async function restoreTabs(count) {
-  const toBeRestoredTabSessions = (await browser.sessions.getRecentlyClosed({
-    maxResults: browser.sessions.MAX_SESSION_RESULTS
-  }).catch(ApiTabs.createErrorHandler())).filter(session => session.tab).slice(0, count);
-  log('restoreTabs: toBeRestoredTabSessions = ', toBeRestoredTabSessions);
-  const promisedRestoredTabs = [];
-  for (const session of toBeRestoredTabSessions.reverse()) {
-    log('restoreTabs: Tabrestoring session = ', session);
-    promisedRestoredTabs.push(Tab.doAndGetNewTabs(async () => {
-      browser.sessions.restore(session.tab.sessionId).catch(ApiTabs.createErrorSuppressor());
+  // We restore sessions one by one and re-query recently closed sessions
+  // after each restoration, because session ids can be invalidated by
+  // restorations (Chrome invalidates them whenever the list of recently
+  // closed sessions is modified).
+  const newTabs = [];
+  for (let index = 0; index < count; index++) {
+    const toBeRestoredTabSessions = (await browser.sessions.getRecentlyClosed({
+      maxResults: browser.sessions.MAX_SESSION_RESULTS
+    }).catch(ApiTabs.createErrorHandler())).filter(session => session.tab);
+    // restore the oldest one of the rest sessions first, to keep the order
+    // same to the multiple restoration on Firefox.
+    const session = toBeRestoredTabSessions[Math.min(count - index, toBeRestoredTabSessions.length) - 1];
+    if (!session)
+      break;
+    log('restoreTabs: restoring session = ', session);
+    newTabs.push(await Tab.doAndGetNewTabs(async () => {
+      await browser.sessions.restore(session.tab.sessionId).catch(ApiTabs.createErrorSuppressor());
       await Tab.waitUntilTrackedAll();
     }));
   }
-  const restoredTabs = Array.from(new Set((await Promise.all(promisedRestoredTabs)).flat()));
+  const restoredTabs = Array.from(new Set(newTabs.flat()));
   log('restoreTabs: restoredTabs = ', restoredTabs);
   await Promise.all(restoredTabs.map(tab => tab && Tab.get(tab.id).$TST.opened));
 
@@ -1530,12 +1538,23 @@ export async function copyLinks(tabs, { indent, recursively } = {}) {
     return;
 
   const { plainText, richText } = collectLinks(tabs, { indent, recursively });
+  const richTextDocument = recursively ? `<ul>\n${richText}\n</ul>` : richText;
+
+  if (typeof navigator == 'undefined' ||
+      typeof navigator.clipboard == 'undefined') {
+    // There is no Clipboard API in the MV3 service worker, so we need to
+    // delegate the actual write to a document.
+    return writeToClipboardWithoutClipboardAPI(tabs[0].windowId, {
+      plainText,
+      richText: richTextDocument,
+    });
+  }
 
   if (typeof navigator.clipboard.write == 'function') {
     log('trying to write data to clipboard via Clipboard API');
     try {
       const clipboardItem = new ClipboardItem({
-        ['text/html']:  recursively ? `<ul>\n${richText}\n</ul>` : richText,
+        ['text/html']:  richTextDocument,
         ['text/plain']: plainText,
       });
       await navigator.clipboard.write([clipboardItem]);
@@ -1554,6 +1573,53 @@ export async function copyLinks(tabs, { indent, recursively } = {}) {
   catch(error) {
     console.error(error);
   }
+}
+async function writeToClipboardWithoutClipboardAPI(windowId, { plainText, richText } = {}) {
+  // First delegate the write to the sidebar of the window, if it is open.
+  // (The corresponding handler must be registered on the sidebar side for
+  // this message type.)
+  const delegated = SidebarConnection.sendMessage({
+    // literal type, because common/constants.js has no constant for this yet
+    type: 'treestyletab:write-to-clipboard',
+    windowId,
+    plainText,
+    richText,
+  });
+  if (delegated)
+    return;
+
+  // No sidebar: fall back to a content script in the active tab.
+  if (!browser.scripting ||
+      !(await Permissions.isGranted(Permissions.ALL_URLS))) {
+    log('writeToClipboardWithoutClipboardAPI: no way to write to the clipboard');
+    return;
+  }
+  const [activeTab] = await browser.tabs.query({ active: true, windowId }).catch(ApiTabs.createErrorHandler());
+  if (!activeTab)
+    return;
+  await browser.scripting.executeScript({
+    target: { tabId: activeTab.id },
+    func: async (plainText, richText) => {
+      try {
+        if (typeof ClipboardItem == 'function' &&
+            typeof navigator.clipboard?.write == 'function') {
+          const clipboardItem = new ClipboardItem({
+            ['text/html']:  new Blob([richText], { type: 'text/html' }),
+            ['text/plain']: new Blob([plainText], { type: 'text/plain' }),
+          });
+          await navigator.clipboard.write([clipboardItem]);
+          return;
+        }
+        await navigator.clipboard.writeText(plainText);
+      }
+      catch(error) {
+        // The write can be rejected while the document is not focused:
+        // there is nothing more we can do then.
+        console.error(error);
+      }
+    },
+    args: [plainText, richText],
+  }).catch(ApiTabs.createErrorSuppressor(ApiTabs.handleMissingTabError, ApiTabs.handleMissingHostPermissionError));
 }
 function collectLinks(tabs, { recursively } = {}) {
   if (!recursively) {
@@ -1615,10 +1681,12 @@ export async function generateQRCode(tab) {
     return;
   }
 
+  // no `window` in the MV3 service worker, and sendMessage is rejected
+  // when there is no receiver, so we always need a fallback value.
   const devicePixelRatio = await browser.runtime.sendMessage({
     type:     Constants.kCOMMAND_GET_DEVICE_PIXEL_RATIO,
     windowId: tab.windowId,
-  }) || window.devicePixelRatio;
+  }).catch(_error => null) || 1;
 
   ShareQRCode.showInTab(tab.id, {
     sharedURL: tab.url,
@@ -1780,7 +1848,9 @@ async function collectBookmarkItems(root, { recursively,  grouped } = {}) {
   if (recursively) {
     let expandedItems = [];
     for (const item of items) {
-      switch (item.type) {
+      // Chrome's BookmarkTreeNode has no "type", so we detect it from the URL.
+      const type = item.type || (item.url ? 'bookmark' : 'folder');
+      switch (type) {
         case 'bookmark':
           expandedItems.push(item);
           break;
@@ -1792,7 +1862,7 @@ async function collectBookmarkItems(root, { recursively,  grouped } = {}) {
     items = expandedItems;
   }
   else {
-    items = items.filter(item => item.type == 'bookmark');
+    items = items.filter(item => (item.type || (item.url ? 'bookmark' : 'folder')) == 'bookmark');
   }
   if (grouped ||
       countMatched(items, item => !Bookmark.BOOKMARK_TITLE_DESCENDANT_MATCHER.test(item.title)) > 1) {
@@ -1867,7 +1937,8 @@ export async function openAllBookmarksWithStructure(id, { discarded, recursively
   if (!item)
     return;
 
-  if (item.type != 'folder') {
+  // Chrome's BookmarkTreeNode has no "type", so we detect it from the URL.
+  if ((item.type || (item.url ? 'bookmark' : 'folder')) != 'folder') {
     item = await browser.bookmarks.get(item.parentId);
     if (Array.isArray(item))
       item = item[0];

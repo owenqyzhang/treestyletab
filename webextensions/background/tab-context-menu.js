@@ -353,10 +353,12 @@ function getItemPlacementSignature(item) {
 export async function init() {
   mInitialized = true;
 
-  window.addEventListener('unload', () => {
-    browser.runtime.onMessage.removeListener(onMessage);
-    TSTAPI.onMessageExternal.removeListener(onMessageExternal);
-  }, { once: true });
+  if (typeof window != 'undefined') { // no window (and no unload) in the MV3 service worker
+    window.addEventListener('unload', () => {
+      browser.runtime.onMessage.removeListener(onMessage);
+      TSTAPI.onMessageExternal.removeListener(onMessageExternal);
+    }, { once: true });
+  }
 
   const itemIds = Object.keys(mItemsById);
   for (const id of itemIds) {
@@ -1027,7 +1029,7 @@ async function onShown(info, contextTab) {
       visible: emulate && sendableContextTabs.length > 0,
     }) && modifiedItemsCount++;
 
-    const canWriteToClipboard = typeof navigator.clipboard.write == 'function' || typeof navigator.clipboard.writeText == 'function';
+    const canWriteToClipboard = typeof navigator.clipboard?.write == 'function' || typeof navigator.clipboard?.writeText == 'function' || typeof window == 'undefined'; // no clipboard in the MV3 service worker: treat as available, the sidebar page performs the actual write
     updateItem('context_copyLinks', {
       visible:       emulate && sendableContextTabs.length > 0,
       enabled:       canWriteToClipboard,

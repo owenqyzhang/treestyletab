@@ -115,14 +115,17 @@ tab-item:not(.collapsed) .throbber {
 }
 :root:not(.rtl)
   #tabbar tab-item:not(.collapsed) tab-item-substance.loading.throbber-unsynchronized .throbber::before {
+  mask: url("/resources/icons/hourglass.svg") no-repeat left center / 100%; /* static fallback for Chrome: no element() support */
   mask: -moz-element(#conductor-throbber) no-repeat left center / 100%;
 }
 :root.rtl
   #tabbar tab-item:not(.collapsed) tab-item-substance.loading.throbber-unsynchronized .throbber::before {
+  mask: url("/resources/icons/hourglass.svg") no-repeat right center / 100%; /* static fallback for Chrome: no element() support */
   mask: -moz-element(#conductor-throbber) no-repeat right center / 100%;
 }
 :root.simulate-svg-context-fill
   #tabbar tab-item:not(.collapsed) tab-item-substance.loading.throbber-unsynchronized .throbber::before {
+  mask: url("/resources/icons/hourglass.svg") no-repeat left center / 100%; /* static fallback for Chrome: no element() support */
   mask: -moz-element(#conductor-throbber-container) no-repeat;
 }
 

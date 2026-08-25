@@ -364,20 +364,22 @@ BackgroundConnection.onMessage.addListener(async message => {
   }
 });
 
-mContainerResizer.addEventListener('mousedown', event => {
+// We use Pointer Events with setPointerCapture()/releasePointerCapture()
+// instead of Firefox-only setCapture()/releaseCapture(), for Chrome.
+mContainerResizer.addEventListener('pointerdown', event => {
   event.stopPropagation();
   event.preventDefault();
-  mContainerResizer.setCapture(true);
+  mContainerResizer.setPointerCapture(event.pointerId);
   mDragStartY = event.clientY;
   mDragStartHeight = mAreaHeight;
-  mContainerResizer.addEventListener('mousemove', onMouseMove);
+  mContainerResizer.addEventListener('pointermove', onPointerMove);
 });
 
-mContainerResizer.addEventListener('mouseup', event => {
-  mContainerResizer.removeEventListener('mousemove', onMouseMove);
+mContainerResizer.addEventListener('pointerup', event => {
+  mContainerResizer.removeEventListener('pointermove', onPointerMove);
   event.stopPropagation();
   event.preventDefault();
-  document.releaseCapture();
+  mContainerResizer.releasePointerCapture(event.pointerId);
   mFixedContainerHeight = Math.max(
     getTabHeight(),
     Math.min(
@@ -389,7 +391,7 @@ mContainerResizer.addEventListener('mouseup', event => {
   saveLastHeight();
 });
 
-function onMouseMove(event) {
+function onPointerMove(event) {
   event.stopPropagation();
   event.preventDefault();
   mFixedContainerHeight = Math.max(0, mDragStartHeight + (event.clientY - mDragStartY));

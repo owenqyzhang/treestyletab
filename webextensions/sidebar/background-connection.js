@@ -24,6 +24,10 @@ export const onMessage = new EventListenerManager();
 
 let mConnectionPort = null;
 let mHeartbeatTimer = null;
+let mReconnectAttempts = 0;
+
+const MAX_RECONNECT_ATTEMPTS = 5;
+const RECONNECT_BASE_DELAY_MSEC = 250;
 
 export function connect() {
   if (mConnectionPort)
@@ -33,10 +37,7 @@ export function connect() {
     name: `${Constants.kCOMMAND_REQUEST_CONNECT_PREFIX}${TabsStore.getCurrentWindowId()}:${type}`
   });
   mConnectionPort.onMessage.addListener(onConnectionMessage);
-  mConnectionPort.onDisconnect.addListener(() => {
-    log(`Disconnected accidentally: try to reconnect.`);
-    window.location.reload();
-  });
+  mConnectionPort.onDisconnect.addListener(onConnectionDisconnect);
   if (mHeartbeatTimer)
     clearInterval(mHeartbeatTimer);
   mHeartbeatTimer = setInterval(() => {
@@ -44,6 +45,36 @@ export function connect() {
       type: Constants.kCONNECTION_HEARTBEAT
     });
   }, configs.heartbeatInterval);
+  if (mReservedMessages.length > 0)
+    reserveToFlushMessages();
+}
+
+function onConnectionDisconnect() {
+  mConnectionPort = null;
+  if (mHeartbeatTimer) {
+    clearInterval(mHeartbeatTimer);
+    mHeartbeatTimer = null;
+  }
+  // On Chrome the MV3 background service worker can be suspended/restarted
+  // at any time, and that disconnects all ports. Thus we should try to
+  // reconnect silently instead of reloading the whole sidebar, and reload
+  // only when reconnection keeps failing.
+  if (mReconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+    log(`Disconnected accidentally and failed to reconnect ${mReconnectAttempts} times: reload myself.`);
+    window.location.reload();
+    return;
+  }
+  mReconnectAttempts++;
+  log(`Disconnected accidentally: try to reconnect. (attempt ${mReconnectAttempts})`);
+  setTimeout(() => {
+    try {
+      connect();
+    }
+    catch(error) {
+      log('Failed to reconnect: ', error);
+      onConnectionDisconnect();
+    }
+  }, RECONNECT_BASE_DELAY_MSEC * mReconnectAttempts);
 }
 
 let mPromisedStartedResolver;
@@ -83,30 +114,38 @@ export function sendMessage(message) {
   // flow is inefficient, boxing the single message into an array and using
   // iterators to process the list unnecessarily.
   if (message.type == Constants.kCONNECTION_HEARTBEAT) {
-    mConnectionPort.postMessage(message);
+    if (mConnectionPort)
+      mConnectionPort.postMessage(message);
     return;
   }
 
   mReservedMessages.push(message);
-  if (!mOnFrame) {
-    mOnFrame = () => {
-      mOnFrame = null;
-      const messages = mReservedMessages;
-      mReservedMessages = [];
-      mConnectionPort.postMessage(messages);
-      if (configs.debug) {
-        const types = mapAndFilterUniq(messages,
-                                       message => message.type || undefined).join(', ');
-        log(`${messages.length} messages sent (${types}):`, messages);
-      }
-    };
-    // Because sidebar is always visible, we may not need to avoid using
-    // window.requestAnimationFrame.
-    window.requestAnimationFrame(mOnFrame);
-  }
+  reserveToFlushMessages();
+}
+
+function reserveToFlushMessages() {
+  if (mOnFrame)
+    return;
+  mOnFrame = () => {
+    mOnFrame = null;
+    if (!mConnectionPort) // disconnected: flushed again after reconnection
+      return;
+    const messages = mReservedMessages;
+    mReservedMessages = [];
+    mConnectionPort.postMessage(messages);
+    if (configs.debug) {
+      const types = mapAndFilterUniq(messages,
+                                     message => message.type || undefined).join(', ');
+      log(`${messages.length} messages sent (${types}):`, messages);
+    }
+  };
+  // Because sidebar is always visible, we may not need to avoid using
+  // window.requestAnimationFrame.
+  window.requestAnimationFrame(mOnFrame);
 }
 
 async function onConnectionMessage(message) {
+  mReconnectAttempts = 0; // the connection is working: forget failures
   if (Array.isArray(message)) {
     for (const oneMessage of message) {
       onConnectionMessage(oneMessage);

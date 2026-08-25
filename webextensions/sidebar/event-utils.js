@@ -67,6 +67,11 @@ export function getElementOriginalTarget(eventOrTarget) {
   const target = eventOrTarget instanceof Node ?
     eventOrTarget :
     (event => {
+      // composedPath()[0] pierces open shadow roots also on Chrome,
+      // which has no Firefox-only originalTarget/explicitOriginalTarget.
+      const composedTarget = event.composedPath?.()[0];
+      if (composedTarget?.nodeType)
+        return composedTarget;
       try {
         if (event.originalTarget &&
             event.originalTarget.nodeType)
@@ -266,7 +271,7 @@ export function getMouseEventDetail(event, tab) {
     button:           event.button,
     isMiddleClick:    isMiddleClick(event),
     isAccelClick:     isAccelAction(event),
-    lastInnerScreenY: window.mozInnerScreenY,
+    lastInnerScreenY: window.mozInnerScreenY ?? window.screenY, // mozInnerScreenY is Firefox-only
   };
 }
 

@@ -331,7 +331,9 @@ window.addEventListener('DOMContentLoaded', async function prepare(_event, retry
     hint.style.display = show ? 'block' : 'none';
 
     if (show) {
-      const uri = `moz-extension://${window.location.host}/options/options.html#${optionPageSection}`;
+      // Use the page's own scheme, to work both on Firefox (moz-extension:)
+      // and Chrome (chrome-extension:).
+      const uri = `${window.location.protocol}//${window.location.host}/options/options.html#${optionPageSection}`;
       hint.firstChild.addEventListener('click', event => {
         if (event.button != 0)
           return;

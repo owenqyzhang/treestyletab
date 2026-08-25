@@ -97,6 +97,23 @@ tab-item-substance[data-current-uri^="chrome:"] .favicon-builtin::before {
   mask: url("/resources/icons/defaultFavicon.svg") no-repeat center / 100%;
 }
 
+/* Chrome internal pages (Blink browsers) */
+tab-item-substance[data-current-uri^="chrome://extensions"] .favicon-builtin::before {
+  background: url("/resources/icons/extensions.svg") no-repeat center / 100%;
+}
+:root.simulate-svg-context-fill tab-item-substance[data-current-uri^="chrome://extensions"] .favicon-builtin::before {
+  background: var(--tab-text);
+  mask: url("/resources/icons/extensions.svg") no-repeat center / 100%;
+}
+
+tab-item-substance[data-current-uri^="chrome://settings"] .favicon-builtin::before {
+  background: url("/resources/icons/settings.svg") no-repeat center / 100%;
+}
+:root.simulate-svg-context-fill tab-item-substance[data-current-uri^="chrome://settings"] .favicon-builtin::before {
+  background: var(--tab-text);
+  mask: url("/resources/icons/settings.svg") no-repeat center / 100%;
+}
+
 tab-item-substance[data-current-uri^="about:addons"] .favicon-builtin::before {
   background: url("/resources/icons/extensions.svg") no-repeat center / 100%;
 }

@@ -443,7 +443,7 @@ export function tryNotifyNewFeatures() {
 
   if (isInitialInstall) {
     mShouldShowInitialStartupPage = true;
-    browser.browserAction.setBadgeText({
+    browser.action.setBadgeText({
       text: '!',
     });
   }
@@ -455,8 +455,8 @@ export function isInitialStartup() {
 
 export function openInitialStartupPage() {
   mShouldShowInitialStartupPage = false;
-  browser.browserAction.setBadgeText({
-    text: null,
+  browser.action.setBadgeText({
+    text: '', // clear with an empty string: Chrome rejects null on older versions
   });
   browser.tabs.create({
     url:    Constants.kSHORTHAND_URIS.startup,
@@ -472,8 +472,15 @@ export function openInitialStartupPage() {
 // runtime environment, for example they are synchronized from other devices.
 // Thus we should migrate such internal URLs to universal shorthand URIs like
 // "ext+treestyletab:(name)".
+// Chrome has no "protocol_handlers" support for extensions, so such
+// shorthand URLs never resolve there: keep direct extension URLs on Chrome.
+
+const kSHORTHAND_URIS_AVAILABLE = browser.runtime.getURL('').startsWith('moz-extension:');
 
 export async function migrateBookmarkUrls() {
+  if (!kSHORTHAND_URIS_AVAILABLE)
+    return;
+
   const granted = await Permissions.isGranted(Permissions.BOOKMARKS);
   if (!granted)
     return;
@@ -508,6 +515,9 @@ export async function migrateBookmarkUrls() {
 }
 
 async function migrateBookmarkUrl(bookmark) {
+  if (!kSHORTHAND_URIS_AVAILABLE)
+    return;
+
   for (const key in Constants.kSHORTHAND_URIS) {
     const url = Constants.kSHORTHAND_URIS[key].split('?')[0];
     if (!bookmark.url.startsWith(url))
@@ -545,7 +555,8 @@ async function onBookmarkChanged(id, changeInfo) {
   }
 }
 
-if (browser.bookmarks &&
+if (kSHORTHAND_URIS_AVAILABLE &&
+    browser.bookmarks &&
     browser.bookmarks.onCreated) {
   browser.bookmarks.onCreated.addListener(onBookmarkCreated);
   browser.bookmarks.onChanged.addListener(onBookmarkChanged);
@@ -553,7 +564,8 @@ if (browser.bookmarks &&
 }
 
 async function startBookmarksUrlAutoMigration() {
-  if (mObservingBookmarks)
+  if (mObservingBookmarks ||
+      !kSHORTHAND_URIS_AVAILABLE)
     return;
 
   mObservingBookmarks = true;

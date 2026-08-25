@@ -91,16 +91,21 @@ export function clearItemRectCache() {
   mCachedItemRects.clear();
 }
 
+// Element.scrollTopMax is Firefox-only, so we calculate it manually for Chrome.
+function calculateScrollTopMax(scrollBox) {
+  return Math.max(0, scrollBox.scrollHeight - scrollBox.clientHeight);
+}
+
 
 let mScrollingInternallyCount = 0;
 
 export function init(scrollPosition) {
   // We should cache scroll positions, because accessing those properties is slow.
   mPinnedScrollBox.$scrollTop    = 0;
-  mPinnedScrollBox.$scrollTopMax = mPinnedScrollBox.scrollTopMax;
+  mPinnedScrollBox.$scrollTopMax = calculateScrollTopMax(mPinnedScrollBox);
   mPinnedScrollBox.$offsetHeight = mPinnedScrollBox.offsetHeight;
   mNormalScrollBox.$scrollTop    = 0;
-  mNormalScrollBox.$scrollTopMax = mNormalScrollBox.scrollTopMax;
+  mNormalScrollBox.$scrollTopMax = calculateScrollTopMax(mNormalScrollBox);
   mNormalScrollBox.$offsetHeight = mNormalScrollBox.offsetHeight;
 
   // We need to register the listener as non-passive to cancel the event.
@@ -126,9 +131,9 @@ export function init(scrollPosition) {
   });
   Size.onUpdated.addListener(() => {
     clearItemRectCache();
-    mPinnedScrollBox.$scrollTopMax = mPinnedScrollBox.scrollTopMax;
+    mPinnedScrollBox.$scrollTopMax = calculateScrollTopMax(mPinnedScrollBox);
     mPinnedScrollBox.$offsetHeight = mPinnedScrollBox.offsetHeight;
-    mNormalScrollBox.$scrollTopMax = mNormalScrollBox.scrollTopMax;
+    mNormalScrollBox.$scrollTopMax = calculateScrollTopMax(mNormalScrollBox);
     mNormalScrollBox.$offsetHeight = mNormalScrollBox.offsetHeight;
     reserveToRenderVirtualScrollViewport({ trigger: 'resized', force: true });
   });
@@ -1159,7 +1164,7 @@ async function onWheel(event) {
 
 function onScroll(event) {
   const scrollBox = event.currentTarget;
-  scrollBox.$scrollTopMax = scrollBox.scrollTopMax;
+  scrollBox.$scrollTopMax = calculateScrollTopMax(scrollBox);
   scrollBox.$scrollTop = Math.min(scrollBox.$scrollTopMax, scrollBox.scrollTop);
   reserveToUpdateScrolledState(scrollBox);
   if (scrollBox == mNormalScrollBox) {

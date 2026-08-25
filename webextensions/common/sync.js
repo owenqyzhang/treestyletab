@@ -163,7 +163,7 @@ export async function init() {
   initialized = true;
 
   reserveToReceiveMessage();
-  window.setInterval(updateSelf, 1000 * 60 * 60 * 24); // update info every day!
+  setInterval(updateSelf, 1000 * 60 * 60 * 24); // update info every day! (bare global: no `window` in the MV3 service worker)
 
   for (const change of preChanges) {
     onConfigChanged(change.key, change.value);

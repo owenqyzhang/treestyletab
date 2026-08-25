@@ -20,7 +20,8 @@ function log(...args) {
 
 let mBlockingCount = 0;
 let mBlockingThrobberCount = 0;
-const mProgressbar = document.querySelector('#blocking-screen progress');
+// no `document` in the MV3 service worker: block()/unblock() run only in the sidebar
+const mProgressbar = typeof document != 'undefined' ? document.querySelector('#blocking-screen progress') : null;
 
 export function block({ throbber, shade } = {}) {
   mBlockingCount++;
@@ -76,9 +77,11 @@ export function unblock() {
     mBlockingThrobberCount = 0;
   if (mBlockingThrobberCount == 0) {
     setProgress(0);
-    mProgressbar.classList.remove('shown');
-    if (mProgressbar.delayedShow)
-      clearTimeout(mProgressbar.delayedShow);
+    if (mProgressbar) {
+      mProgressbar.classList.remove('shown');
+      if (mProgressbar.delayedShow)
+        clearTimeout(mProgressbar.delayedShow);
+    }
     document.documentElement.classList.remove(Constants.kTABBAR_STATE_BLOCKING_WITH_THROBBER);
     document.documentElement.classList.remove(Constants.kTABBAR_STATE_BLOCKING_WITH_SHADE);
   }

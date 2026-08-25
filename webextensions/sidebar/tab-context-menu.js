@@ -38,6 +38,10 @@ function log(...args) {
 
 export const onTabsClosing = new EventListenerManager();
 
+// Chrome has no native browser.menus.overrideContext() (the compat shim
+// defines it as a no-op), so we need to fall back to the emulated menu there.
+const IS_CHROME = typeof chrome != 'undefined' && !!chrome.sidePanel;
+
 let mUI;
 let mMenu;
 
@@ -131,7 +135,7 @@ async function rebuild() {
       if (item.documentUrlPatterns &&
           (!item.viewTypes ||
            !item.viewTypes.includes('sidebar') ||
-           item.documentUrlPatterns.some(pattern => !/^moz-extension:/.test(pattern)) ||
+           item.documentUrlPatterns.some(pattern => !/^(?:moz|chrome)-extension:/.test(pattern)) ||
            !matchesToPattern(window.location.href, item.documentUrlPatterns)) &&
           mContextTab &&
           !matchesToPattern(mContextTab.url, item.documentUrlPatterns))
@@ -220,7 +224,9 @@ function chooseIconForAddon(params) {
     return null;
   let url = icons[size];
   if (!/^\w+:\/\//.test(url))
-    url = `moz-extension://${addon.internalId || params.internalId}/${url.replace(/^\//, '')}`;
+    url = IS_CHROME ?
+      `chrome-extension://${params.id}/${url.replace(/^\//, '')}` : // Chrome has no "internalId": the addon id is the host
+      `moz-extension://${addon.internalId || params.internalId}/${url.replace(/^\//, '')}`;
   return url;
 }
 
@@ -262,13 +268,19 @@ function matchesToPattern(url, patterns) {
   if (!Array.isArray(patterns))
     patterns = [patterns];
   for (const pattern of patterns) {
-    if (matchPatternToRegExp(pattern).test(url))
-      return true;
+    try {
+      if (matchPatternToRegExp(pattern).test(url))
+        return true;
+    }
+    catch(error) {
+      // Don't abort the whole menu build due to one invalid pattern.
+      console.log('failed to match pattern: ', pattern, error);
+    }
   }
   return false;
 }
 // https://developer.mozilla.org/en-US/Add-ons/WebExtensions/Match_patterns
-const matchPattern = /^(?:(\*|http|https|file|ftp|app|moz-extension):\/\/([^\/]+|)\/?(.*))$/i;
+const matchPattern = /^(?:(\*|http|https|file|ftp|app|moz-extension|chrome-extension):\/\/([^\/]+|)\/?(.*))$/i;
 function matchPatternToRegExp(pattern) {
   if (pattern === '<all_urls>')
     return (/^(?:https?|file|ftp|app):\/\//);
@@ -637,6 +649,18 @@ window.addEventListener('mouseup', _event => {
   reserveToActivateSubpanel();
 });
 
+async function openEmulatedMenu(tab, event) {
+  event.stopPropagation();
+  event.preventDefault();
+  await onShown(tab);
+  await wait(25);
+  await open({
+    tab,
+    left: event.clientX,
+    top:  event.clientY
+  });
+}
+
 async function onContextMenu(event) {
   reserveToActivateSubpanel();
   const focused = document.querySelector(':focus');
@@ -673,6 +697,13 @@ async function onContextMenu(event) {
 
   if (!onInputField && context?.context) {
     log('onContextMenu: override context as something given: ', context);
+    if (IS_CHROME) {
+      // Chrome cannot override the native context menu: answer the request
+      // with the emulated menu instead.
+      if (context.context == 'tab')
+        await openEmulatedMenu(context.tabId ? Tab.get(context.tabId) : null, event);
+      return;
+    }
     try {
       browser.menus.overrideContext(context);
     }
@@ -684,7 +715,7 @@ async function onContextMenu(event) {
           notify({
             title:   browser.i18n.getMessage('bookmarkContext_notification_notPermitted_title'),
             message: browser.i18n.getMessage(`bookmarkContext_notification_notPermitted_message${isLinux() ? '_linux' : ''}`),
-            url:     `moz-extension://${window.location.host}/options/options.html#bookmarksPermissionGranted_context`
+            url:     browser.runtime.getURL('options/options.html#bookmarksPermissionGranted_context')
           });
         else
           console.error(error);
@@ -713,6 +744,11 @@ async function onContextMenu(event) {
   const bookmarkId = originalTargetBookmarkElement?.dataset.bookmarkId;
   if (bookmarkId &&
       !modifierKeyPressed) {
+    if (IS_CHROME) {
+      // There is no way to show the native bookmark context menu on Chrome.
+      log('onContextMenu: cannot override context as bookmark context menu');
+      return;
+    }
     log('onContextMenu: override context as bookmark context menu');
     browser.menus.overrideContext({
       context:    'bookmark',
@@ -727,6 +763,13 @@ async function onContextMenu(event) {
     EventUtils.getTreeItemFromEvent(event);
   if (tab &&
       !modifierKeyPressed) {
+    if (IS_CHROME) {
+      // Chrome cannot override the native context menu: always show
+      // the emulated menu regardless of configs.emulateDefaultContextMenu.
+      log('onContextMenu: show emulated context menu instead of overridden context');
+      await openEmulatedMenu(tab, event);
+      return;
+    }
     log('onContextMenu: override context as tab context menu');
     browser.menus.overrideContext({
       context: 'tab',
@@ -759,6 +802,10 @@ async function onContextMenu(event) {
 
   if (event.target == document.body) { // when the application key is pressed
     log('onContextMenu: override context as tab context menu for blank area');
+    if (IS_CHROME) {
+      await openEmulatedMenu(Tab.getActiveTab(TabsStore.getCurrentWindowId()), event);
+      return;
+    }
     browser.menus.overrideContext({
       context: 'tab',
       tabId:   Tab.getActiveTab(TabsStore.getCurrentWindowId()).id,

@@ -66,9 +66,9 @@ async function addTabsToGroupInternal(tabs, groupIdOrProperties) {
   });
   log('addTabsToGroupInternal: group tabs!');
   await browser.tabs.group({
-    groupId,
     tabIds: tabsToGrouped.map(tab => tab.id),
-    ...(groupId ? {} : {
+    // "groupId: null" must not be sent: Chrome rejects null for the optional integer.
+    ...(groupId ? { groupId } : {
       createProperties: {
         windowId, // We must specify the window ID explicitly, otherwise tabs moved across windows may be reverted and grouped in the old window!
       },

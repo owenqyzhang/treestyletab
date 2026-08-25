@@ -59,9 +59,9 @@
     --popup-border-color: var(--border-color-deemphasized);
 
     /** sidebar **/
-    --sidebar-background-color: -moz-sidebar;
-    --sidebar-border-color: -moz-sidebarborder;
-    --sidebar-text-color: -moz-sidebartext;
+    --sidebar-background-color: Canvas;
+    --sidebar-border-color: color-mix(in srgb, CanvasText 20%, Canvas);
+    --sidebar-text-color: CanvasText;
 
     /** table **/
     --table-header-text-color: AccentColorText;
@@ -73,11 +73,11 @@
     --text-color-accent-primary-selected: SelectedItemText;
 
     /** toolbar **/
-    --toolbar-background-color: color-mix(in srgb, -moz-dialog 85%, var(--color-white));
+    --toolbar-background-color: color-mix(in srgb, Canvas 85%, var(--color-white));
     --toolbar-field-background-color-focus: Field;
     --toolbar-field-text-color: inherit;
     --toolbar-field-text-color-focus: FieldText;
-    --toolbar-text-color: -moz-dialogtext;
+    --toolbar-text-color: CanvasText;
 
     /** toolbarbutton **/
     --toolbarbutton-icon-fill: currentColor;
@@ -85,10 +85,10 @@
     --toolbarbutton-icon-fill-attention-text: AccentColorText;
 
     /** toolbox **/
-    --toolbox-background-color: -moz-headerbar;
-    --toolbox-background-color-inactive: -moz-headerbarinactive;
-    --toolbox-text-color: -moz-headerbartext;
-    --toolbox-text-color-inactive: -moz-headerbarinactivetext;
+    --toolbox-background-color: Canvas;
+    --toolbox-background-color-inactive: Canvas;
+    --toolbox-text-color: CanvasText;
+    --toolbox-text-color-inactive: CanvasText;
   }
 }
 
@@ -193,7 +193,7 @@
     --text-color-accent-primary-selected: SelectedItemText;
 
     /** toolbar **/
-    --toolbar-background-color: color-mix(in srgb, -moz-dialog 85%, var(--color-white));
+    --toolbar-background-color: color-mix(in srgb, Canvas 85%, var(--color-white));
     --toolbar-field-background-color-focus: Field;
     --toolbar-field-border-color-focus: color-mix(in srgb, var(--focus-outline-color) 50%, transparent);
     --toolbar-field-text-color: inherit;
@@ -204,9 +204,9 @@
     --toolbarbutton-icon-fill-attention: AccentColor;
 
     /** toolbox **/
-    --toolbox-background-color-inactive: -moz-headerbarinactive;
-    --toolbox-text-color: -moz-headerbartext;
-    --toolbox-text-color-inactive: -moz-headerbarinactivetext;
+    --toolbox-background-color-inactive: Canvas;
+    --toolbox-text-color: CanvasText;
+    --toolbox-text-color-inactive: CanvasText;
   }
 }
 

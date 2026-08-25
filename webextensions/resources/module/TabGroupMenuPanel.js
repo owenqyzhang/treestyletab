@@ -697,8 +697,9 @@ export default class TabGroupMenuPanel extends InContentPanel {
       this.log('trying to write data to clipboard via Clipboard API');
       try {
         const clipboardItem = new ClipboardItem({
-          ['text/html']:  richText,
-          ['text/plain']: plainText,
+          // Blobs work also on Chrome versions which don't accept bare strings
+          ['text/html']:  new Blob([richText], { type: 'text/html' }),
+          ['text/plain']: new Blob([plainText], { type: 'text/plain' }),
         });
         await navigator.clipboard.write([clipboardItem]);
         return;
