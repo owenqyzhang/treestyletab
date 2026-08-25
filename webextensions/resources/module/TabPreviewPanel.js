@@ -212,6 +212,12 @@ export default class TabPreviewPanel extends InContentPanel {
           white-space: pre;
         }
 
+        .in-content-panel-memory-usage {
+          font-size: calc(1em / var(--in-content-panel-scale));
+          margin: 0 var(--panel-padding-inline) var(--panel-padding-block);
+          opacity: 0.69; /* same as .in-content-panel-url */
+        }
+
         .in-content-panel-image-container {
           margin-block-start: 0.25em;
           max-height: calc(var(--panel-width) * ${parseInt(this.BASE_PANEL_HEIGHT) / parseInt(this.BASE_PANEL_WIDTH)}); /* use relative value instead of 140px */
@@ -288,6 +294,70 @@ export default class TabPreviewPanel extends InContentPanel {
             }
           }
         }
+
+        /* Simulate the appearance of Chrome's native tab hover card, for the
+           panel rendered in the sidebar (the only available mode on Chrome). */
+        &.in-sidebar {
+          .in-content-panel {
+            background: Canvas;
+            border: 1px solid color-mix(in srgb, CanvasText 15%, transparent);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+            color: CanvasText;
+            font: 13px system-ui;
+            line-height: 1.4;
+
+            &.style-nova {
+              padding-block-end: 0; /* the card padding is applied to the inner box instead */
+            }
+          }
+
+          .in-content-panel-contents-inner-box {
+            padding: 10px 12px;
+          }
+
+          .in-content-panel-title {
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            font-weight: 500;
+            line-height: 1.4;
+            margin: 0;
+            max-height: 2.8em; /* 2 lines * line-height 1.4 */
+          }
+
+          .in-content-panel-url {
+            color: color-mix(in srgb, CanvasText 65%, transparent);
+            margin: 0;
+            opacity: 1;
+          }
+
+          .in-content-panel-contextual-identity {
+            margin: 0;
+          }
+
+          .in-content-panel-extended-content {
+            line-height: 1.4;
+            margin: 0;
+
+            .title-line {
+              line-height: 1.4;
+              padding-block: 2px;
+            }
+          }
+
+          .in-content-panel-memory-usage {
+            border-block-start: 1px solid color-mix(in srgb, CanvasText 10%, transparent);
+            color: color-mix(in srgb, CanvasText 65%, transparent);
+            margin: 6px 0 0;
+            opacity: 1;
+            padding-block-start: 6px;
+          }
+
+          /* keep the preview image flush with the card edges */
+          .in-content-panel:not(.style-nova) .in-content-panel-image-container {
+            margin: 0.25em -12px -10px;
+          }
+        }
       }
     `;
   }
@@ -324,6 +394,7 @@ export default class TabPreviewPanel extends InContentPanel {
       <div class="in-content-panel-url"></div>
       <div class="in-content-panel-contextual-identity"><label class="contextual-identity"><span class="label"></span><img class="icon"/></label></div>
       <div class="in-content-panel-extended-content"></div>
+      <div class="in-content-panel-memory-usage blank"></div>
       <div class="in-content-panel-image-container">
         <img class="in-content-panel-image"/>
       </div>
@@ -357,8 +428,8 @@ export default class TabPreviewPanel extends InContentPanel {
     });
   }
 
-  onUpdateUI({ targetId, title, url, contextualIdentity, tooltipHtml, hasPreview, previewURL, complete, scale, ...params }) {
-    this.log(`${this.type} onUpdateUI `, { panel: this.panel, targetId, title, url, contextualIdentity, tooltipHtml, hasPreview, previewURL, ...params });
+  onUpdateUI({ targetId, title, url, contextualIdentity, tooltipHtml, hasPreview, previewURL, memoryUsageMB, complete, scale, ...params }) {
+    this.log(`${this.type} onUpdateUI `, { panel: this.panel, targetId, title, url, contextualIdentity, tooltipHtml, hasPreview, previewURL, memoryUsageMB, ...params });
 
     const hasLoadablePreviewURL = previewURL && /^((https?|moz-extension|chrome-extension):|data:image\/[^,]+,.+)/.test(previewURL);
     if (previewURL)
@@ -383,6 +454,13 @@ export default class TabPreviewPanel extends InContentPanel {
       this.panel.classList.add('extended');
       this.root.classList.add('extended');
     }
+
+    // Simulate the behavior of Chrome's native tab hover card: it shows
+    // the memory usage of the hovered background tab, when available.
+    const memoryUsageElement = this.panel.querySelector('.in-content-panel-memory-usage');
+    const hasMemoryUsage = typeof memoryUsageMB == 'number';
+    memoryUsageElement.textContent = hasMemoryUsage ? `Memory usage: ${memoryUsageMB} MB` : '';
+    memoryUsageElement.classList.toggle('blank', !hasMemoryUsage);
 
     const contextualIdentityElement = this.panel.querySelector('.in-content-panel-contextual-identity');
     contextualIdentityElement.classList.toggle('hidden', !contextualIdentity);

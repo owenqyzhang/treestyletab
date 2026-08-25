@@ -109,11 +109,51 @@ const mController = new InContentPanelController({
   `,
 });
 
+// chrome.processes is available only on the Dev channel of Chrome with the
+// "processes" permission, thus we use it fully optionally: when the API is
+// unavailable or any call fails, the memory usage row is simply omitted.
+function getTabMemoryUsageMB(tabId) {
+  if (typeof chrome == 'undefined' ||
+      !chrome.processes?.getProcessIdForTab)
+    return Promise.resolve(null);
+
+  return new Promise((resolve, _reject) => {
+    try {
+      chrome.processes.getProcessIdForTab(tabId, processId => {
+        if (chrome.runtime.lastError ||
+            typeof processId != 'number') {
+          return resolve(null);
+        }
+        try {
+          chrome.processes.getProcessInfo(processId, true, processes => {
+            if (chrome.runtime.lastError) {
+              return resolve(null);
+            }
+            const privateMemory = processes?.[processId]?.privateMemory;
+            resolve(typeof privateMemory == 'number' && privateMemory > 0 ?
+              Math.round(privateMemory / (1024 * 1024)) :
+              null);
+          });
+        }
+        catch(_error) {
+          resolve(null);
+        }
+      });
+    }
+    catch(_error) {
+      resolve(null);
+    }
+  });
+}
+
 async function onTabSubstanceEnter(event) {
   const timestamp = Date.now();
 
   const canCaptureTab = Permissions.isGrantedSync(Permissions.ALL_URLS);
-  if (!canCaptureTab)
+  // The capture permission is only needed for preview images; on Chrome the
+  // hover card (title/URL/memory) works without it, like Chrome's native
+  // tab hover cards.
+  if (!canCaptureTab && !IS_CHROME)
     return;
 
   const windowId = TabsStore.getCurrentWindowId();
@@ -168,6 +208,10 @@ async function onTabSubstanceEnter(event) {
     })
   ) || null;
 
+  // Simulate the behavior of Chrome's native tab hover card: it shows
+  // the memory usage of the hovered tab, except for the active one.
+  const promisedMemoryUsageMB = active ? null : getTabMemoryUsageMB(raw.id);
+
   if (!substance.raw)
     return;
 
@@ -201,11 +245,14 @@ async function onTabSubstanceEnter(event) {
     },
     promisedMessageParams: new Promise(async (resolve, _reject) => {
       const promisedPreviewURL = typeof previewURL == 'function' && previewURL();
-      if (!promisedPreviewURL) {
+      const memoryUsageMB = promisedMemoryUsageMB && await promisedMemoryUsageMB.catch(_error => null);
+      if (!promisedPreviewURL &&
+          typeof memoryUsageMB != 'number') {
         return resolve(null);
       }
       resolve({
-        previewURL: await promisedPreviewURL,
+        ...(promisedPreviewURL ? { previewURL: await promisedPreviewURL } : {}),
+        ...(typeof memoryUsageMB == 'number' ? { memoryUsageMB } : {}),
       });
     }),
     canRenderInSidebar() {
