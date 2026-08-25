@@ -774,6 +774,13 @@ if (IS_CHROME) {
   }
 
   if (IS_SERVICE_WORKER) {
+    // Let Chrome itself toggle the side panel on toolbar button clicks:
+    // this works natively even while the service worker is asleep or
+    // still initializing, and avoids the user-gesture pitfalls of
+    // calling sidePanel.open() after awaited API calls.
+    NATIVE.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
+      .catch(error => console.error('browser-compat: failed to set side panel behavior', error));
+
     // Initialize emulation modules early: sessions values must be
     // restored before TST polls them, and the successor/keepalive
     // machinery must be armed on every service worker start.

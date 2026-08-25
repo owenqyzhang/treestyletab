@@ -104,6 +104,12 @@ function onToolbarButtonClick(tab) {
     return;
   }
 
+  // Chrome toggles the side panel natively on action clicks
+  // (sidePanel.setPanelBehavior({openPanelOnActionClick: true}) in the
+  // compat layer); toggling here too would immediately close it again.
+  if (typeof chrome != 'undefined' && chrome.sidePanel)
+    return;
+
   if (typeof browser.sidebarAction.toggle == 'function')
     browser.sidebarAction.toggle();
   else if (SidebarConnection.isSidebarOpen(tab.windowId))
