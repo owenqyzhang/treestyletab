@@ -814,8 +814,11 @@ BookmarkTabsDialog.FOLDER_CHOOSER_STYLE = `
   }
 `;
 
+// Guarded: this module may be imported by the MV3 service worker.
+if (typeof window != 'undefined') {
 window.BookmarkTabsDialog = BookmarkTabsDialog;
 window.RICH_CONFIRM_DIALOG_CLASS_NAME = 'BookmarkTabsDialog';
+}
 
 if (Constants.IS_BACKGROUND) {
   // Dialog loaded in a popup cannot call privileged APIs, so the background script proxies such operations.

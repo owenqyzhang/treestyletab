@@ -411,9 +411,19 @@ if (Constants.IS_BACKGROUND) {
   };
   browser.runtime.onMessage.addListener(onMessage);
 
-  import('/extlib/cross-context-messaging-bg.js').then(({ default: CrossContextMessaging }) => {
-    CrossContextMessaging.onMessage((message, sender) => {
+  // Dynamic import() is disallowed in the MV3 service worker; the
+  // background entry point statically imports the module and exposes it.
+  const staticCrossContextMessaging = globalThis.__treestyletabCrossContextMessaging;
+  if (staticCrossContextMessaging) {
+    staticCrossContextMessaging.onMessage((message, sender) => {
       return onMessage(message, sender);
     });
-  });
+  }
+  else if (typeof window != 'undefined') {
+    import('/extlib/cross-context-messaging-bg.js').then(({ default: CrossContextMessaging }) => {
+      CrossContextMessaging.onMessage((message, sender) => {
+        return onMessage(message, sender);
+      });
+    });
+  }
 }
