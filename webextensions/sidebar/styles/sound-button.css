@@ -91,7 +91,7 @@ tab-item:not(.collapsed) tab-item-substance {
     &.muted tab-sound-button::after,
     &.has-muted-member.subtree-collapsed[data-child-ids] tab-sound-button::after {
       background-image: none;
-      mask-image: url("./icons/audio-16-mute.svg");
+      mask-image: url("data:image/svg+xml,%3Csvg width=%2212%22 height=%2212%22 fill=%22black%22 xmlns=%22http://www.w3.org/2000/svg%22%3E %3Cpath d=%22m2.791 3.581 1.347-2.294C4.654.408 6 .774 6 1.793v8.413c0 1.02-1.346 1.386-1.862.507L2.791 8.419c-.031-.053-.051-.111-.071-.169H1a1 1 0 0 1-1-1v-2.5a1 1 0 0 1 1-1h1.72a.93.93 0 0 1 .071-.169zm8.325-.081L9.5 5.116 7.884 3.5 7 4.384 8.616 6 7 7.616l.884.884L9.5 6.884 11.116 8.5 12 7.616 10.384 6 12 4.384l-.884-.884z%22/%3E %3C/svg%3E");
     }
   }
 
@@ -103,7 +103,7 @@ tab-item:not(.collapsed) tab-item-substance {
     &.autoplay-blocked tab-sound-button::after,
     &.has-autoplay-blocked-member.subtree-collapsed[data-child-ids] tab-sound-button::after {
       background-image: none;
-      mask-image: url("./icons/audio-16-blocked.svg");
+      mask-image: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 12 12%22 width=%2212%22 height=%2212%22%3E %3Cpath d=%22M6 1.5c2.5 0 4.5 2 4.5 4.5s-2 4.5-4.5 4.5-4.5-2-4.5-4.5 2-4.5 4.5-4.5m0-1C3 .5.5 3 .5 6S3 11.5 6 11.5 11.5 9 11.5 6 9 .5 6 .5zM4.2 8V4c0-.4.4-.6.7-.4l3.5 2c.3.2.3.7 0 .9L5 8.4c-.3.2-.8 0-.8-.4z%22 fill=%22black%22 /%3E %3C/svg%3E");
     }
   }
 
@@ -118,7 +118,7 @@ tab-item:not(.collapsed) tab-item-substance {
     &.sound-playing:not(.muted) tab-sound-button::after,
     &.has-sound-playing-member.subtree-collapsed[data-child-ids] tab-sound-button::after {
       background-image: none;
-      mask-image: url("./icons/audio-16.svg");
+      mask-image: url("data:image/svg+xml,%3Csvg width=%2212%22 height=%2212%22 fill=%22black%22 xmlns=%22http://www.w3.org/2000/svg%22%3E %3Cpath d=%22M7.5 1.881V.595A5.499 5.499 0 0 1 12 6a5.499 5.499 0 0 1-4.5 5.405v-1.286C9.36 9.666 10.75 7.997 10.75 6c0-1.997-1.39-3.666-3.25-4.119zm-3.362-.594L2.791 3.581c-.031.053-.051.111-.071.169H1a1 1 0 0 0-1 1v2.5a1 1 0 0 0 1 1h1.72a.93.93 0 0 0 .071.169l1.347 2.294c.516.879 1.862.513 1.862-.507V1.793C6 .774 4.654.408 4.138 1.287z%22/%3E %3Cpath d=%22M7.5 3.193v5.613c1.161-.413 2-1.504 2-2.807s-.839-2.393-2-2.806z%22/%3E %3C/svg%3E");
     }
   }
 }

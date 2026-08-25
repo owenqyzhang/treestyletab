@@ -2641,5 +2641,17 @@
   },
   "tabGroupMenu_tab_group_editor_done_accesskey": {
     "message": "D"
+  },
+  "config_sidebarFont_caption": {
+    "message": "Font"
+  },
+  "config_sidebarFontSize_label": {
+    "message": "Font size (pixels, 0 = browser default)"
+  },
+  "config_sidebarFontFamily_label": {
+    "message": "Font family (blank = browser default)"
+  },
+  "config_sidebarFont_description": {
+    "message": "By default the sidebar uses the browser UI font. Set a size or family here to override it."
   }
 }

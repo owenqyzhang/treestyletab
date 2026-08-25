@@ -55,21 +55,21 @@
     background-image: url("./icons/microphone.svg")
   }
   :root.simulate-svg-context-fill tab-item-substance.sharing-microphone &::before {
-    mask-image: url("./icons/microphone.svg");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22 width=%2216%22 height=%2216%22 fill=%22black%22 %3E %3Cpath d=%22m7.875 11.617 0 2.133-1.75 0a.625.625 0 0 0 0 1.25l4.75 0a.625.625 0 0 0 0-1.25l-1.75 0 0-2.133.272-.237a4.468 4.468 0 0 0 3.541-3.651.625.625 0 0 0-.513-.72.62.62 0 0 0-.72.513c-.263 1.57-1.611 2.71-3.206 2.71s-2.943-1.14-3.206-2.71a.63.63 0 0 0-.72-.513.625.625 0 0 0-.513.72 4.468 4.468 0 0 0 3.525 3.648l.29.24z%22/%3E %3Cpath d=%22M8.5 2.25c.689 0 1.25.561 1.25 1.25l0 3c0 .689-.561 1.25-1.25 1.25S7.25 7.189 7.25 6.5l0-3c0-.689.561-1.25 1.25-1.25M8.5 1A2.5 2.5 0 0 0 6 3.5l0 3a2.5 2.5 0 1 0 5 0l0-3A2.5 2.5 0 0 0 8.5 1z%22/%3E %3C/svg%3E");
   }
 
   tab-item-substance.sharing-camera &::before {
     background-image: url("./icons/camera.svg")
   }
   :root.simulate-svg-context-fill tab-item-substance.sharing-camera &::before {
-    mask-image: url("./icons/camera.svg");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22 width=%2216%22 height=%2216%22 fill=%22black%22 %3E %3Cpath d=%22M13.986 2.824c-.491 0-.992.182-1.4.59L12 4a2 2 0 0 0-2-2L3 2a2 2 0 0 0-2 2l0 8a2 2 0 0 0 2 2l7 0a2 2 0 0 0 2-2l.586.586c.407.407.908.59 1.4.59 1.028 0 2.014-.798 2.014-2.004l0-6.344c0-1.205-.986-2.004-2.014-2.004zm.764 8.348c0 .52-.447.754-.764.754a.71.71 0 0 1-.516-.224l-.586-.586L11.268 9.5l-.518 0 0 2.65-.6.6-7.3 0-.6-.6 0-8.3.6-.6 7.3 0 .6.6 0 2.65.518 0 1.616-1.616.586-.586a.713.713 0 0 1 .516-.224c.317 0 .764.234.764.754l0 6.344z%22/%3E %3C/svg%3E");
   }
 
   tab-item-substance.sharing-screen &::before {
     background-image: url("./icons/screen.svg")
   }
   :root.simulate-svg-context-fill tab-item-substance.sharing-screen &::before {
-    mask-image: url("./icons/screen.svg");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22 width=%2216%22 height=%2216%22 fill=%22black%22 %3E %3Cpath d=%22m1 4 0 8.25a2 2 0 0 0 2 2l11 0a2 2 0 0 0 2-2L16 4a2 2 0 0 0-2-2L3 2a2 2 0 0 0-2 2zm13.75-.15 0 8.55-.6.6-11.3 0-.6-.6 0-8.55.6-.6 11.3 0 .6.6z%22/%3E %3Cpath d=%22M9.25 11.375a.625.625 0 0 1-1.25 0L7.999 8 5.943 8a.5.5 0 0 1-.354-.854l2.823-2.823.424 0 2.823 2.823a.5.5 0 0 1-.352.854L9.25 8l0 3.375z%22/%3E %3C/svg%3E");
   }
 
   &::before {

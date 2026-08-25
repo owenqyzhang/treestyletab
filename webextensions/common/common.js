@@ -212,8 +212,11 @@ export const configs = new Configs({
 
   counterRole: Constants.kCOUNTER_ROLE_CONTAINED_TABS,
 
-  baseIndent:                     12,
+  baseIndent:                     24,
   minIndent:                      Constants.kDEFAULT_MIN_INDENT,
+  // 0 / blank = the browser's default UI font (see sidebar/styles/base.css)
+  sidebarFontSize:                0,
+  sidebarFontFamily:              '',
   maxTreeLevel:                   -1,
   indentAutoShrink:               true,
   indentAutoShrinkOnlyForVisible: true,

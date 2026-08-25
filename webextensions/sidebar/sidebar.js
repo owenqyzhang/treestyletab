@@ -226,6 +226,8 @@ export async function init() {
 
   onConfigChange('colorScheme');
   onConfigChange('simulateSVGContextFill');
+  onConfigChange('sidebarFontSize');
+  onConfigChange('sidebarFontFamily');
   onInit.dispatch();
 
   const promisedScrollPosition = browser.sessions.getWindowValue(mTargetWindow, Constants.kWINDOW_STATE_SCROLL_POSITION).catch(ApiTabs.createErrorHandler());
@@ -1067,6 +1069,17 @@ async function onConfigChange(changedKey) {
 
     case 'simulateSVGContextFill':
       rootClasses.toggle('simulate-svg-context-fill', configs[changedKey]);
+      break;
+
+    // 0 / blank = keep the browser default UI font from the stylesheet.
+    case 'sidebarFontSize':
+      document.documentElement.style.fontSize = configs.sidebarFontSize > 0 ?
+        `${configs.sidebarFontSize}px` :
+        '';
+      break;
+
+    case 'sidebarFontFamily':
+      document.documentElement.style.fontFamily = String(configs.sidebarFontFamily || '').trim();
       break;
 
     case 'enableWorkaroundForBug1763420_reloadMaskImage':
