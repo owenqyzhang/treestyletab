@@ -295,6 +295,16 @@ async function tryReattachValuesToRestoredTab(tab) {
 // ===================================================================
 // Event listeners
 // ===================================================================
+const API = {
+  setTabValue,
+  getTabValue,
+  removeTabValue,
+  setWindowValue,
+  getWindowValue,
+  removeWindowValue,
+  copyTabValues,
+};
+
 function listen() {
   chrome.tabs.onCreated.addListener(tab => {
     if (tabUrl(tab))
@@ -448,12 +458,3 @@ export async function copyTabValues(sourceTabId, destinationTabId) {
   }
 }
 
-const API = {
-  setTabValue,
-  getTabValue,
-  removeTabValue,
-  setWindowValue,
-  getWindowValue,
-  removeWindowValue,
-  copyTabValues,
-};

@@ -480,7 +480,7 @@ export async function clearTemporaryState(tab) {
     browser.scripting.executeScript({ // failsafe
       target: { tabId: tab.id },
       injectImmediately: true,
-      func: href => history.replaceState({}, document.title, href),
+      func: href => history.replaceState({}, document.title, href), // eslint-disable-line no-restricted-globals
       args: [url.href],
     }).catch(_error => {}), // Chrome disallows scripting into extension pages: rely on the messaging above.
   ]);
@@ -570,7 +570,7 @@ Tab.onPinned.addListener(async tab => {
       browser.scripting.executeScript({ // failsafe
         target: { tabId: tab.id },
         injectImmediately: true,
-        func: href => history.replaceState({}, document.title, href),
+        func: href => history.replaceState({}, document.title, href), // eslint-disable-line no-restricted-globals
         args: [url.href],
       }).catch(_error => {}), // Chrome disallows scripting into extension pages: rely on the messaging above.
     ]);

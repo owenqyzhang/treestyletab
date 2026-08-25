@@ -1071,7 +1071,7 @@ function onDragStart(event) {
 
   const dt = event.dataTransfer;
   dt.effectAllowed = 'copy';
-  dt.setData('text/uri-list', location.protocol == 'moz-extension:' ? 'about:newtab' : 'chrome://newtab/');
+  dt.setData('text/uri-list', window.location.protocol == 'moz-extension:' ? 'about:newtab' : 'chrome://newtab/');
 }
 onDragStart = EventUtils.wrapWithErrorHandler(onDragStart);
 

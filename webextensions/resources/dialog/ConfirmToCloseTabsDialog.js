@@ -99,8 +99,8 @@ class ConfirmToCloseTabsDialog extends RichConfirmDialog {
 };
 // Guarded: this module may be imported by the MV3 service worker.
 if (typeof window != 'undefined') {
-window.ConfirmToCloseTabsDialog = ConfirmToCloseTabsDialog;
-window.RICH_CONFIRM_DIALOG_CLASS_NAME = 'ConfirmToCloseTabsDialog';
+  window.ConfirmToCloseTabsDialog = ConfirmToCloseTabsDialog;
+  window.RICH_CONFIRM_DIALOG_CLASS_NAME = 'ConfirmToCloseTabsDialog';
 }
 
 export default ConfirmToCloseTabsDialog;

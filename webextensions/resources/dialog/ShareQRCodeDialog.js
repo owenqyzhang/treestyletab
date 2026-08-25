@@ -96,8 +96,8 @@ class ShareQRCodeDialog extends RichConfirmDialog {
 };
 // Guarded: this module may be imported by the MV3 service worker.
 if (typeof window != 'undefined') {
-window.ShareQRCodeDialog = ShareQRCodeDialog;
-window.RICH_CONFIRM_DIALOG_CLASS_NAME = 'ShareQRCodeDialog';
+  window.ShareQRCodeDialog = ShareQRCodeDialog;
+  window.RICH_CONFIRM_DIALOG_CLASS_NAME = 'ShareQRCodeDialog';
 }
 
 export default ShareQRCodeDialog;

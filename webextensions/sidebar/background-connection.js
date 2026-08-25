@@ -45,7 +45,7 @@ export function connect() {
       type: Constants.kCONNECTION_HEARTBEAT
     });
   }, configs.heartbeatInterval);
-  if (mReservedMessages.length > 0)
+  if (mReservedMessages.length > 0) // eslint-disable-line no-use-before-define
     reserveToFlushMessages();
 }
 

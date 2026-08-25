@@ -416,7 +416,7 @@ function buildCompatBrowser(chrome) {
   // (getRecentlyClosed, restore, MAX_SESSION_RESULTS) pass through.
   const sessionsRPC = (method, ...args) => {
     if (IS_SERVICE_WORKER)
-      return CompatSessions[method](...args);
+      return CompatSessions[method](...args); // eslint-disable-line import/namespace
     return chrome.runtime.sendMessage({
       type: 'treestyletab:compat-sessions',
       method,
@@ -796,7 +796,7 @@ if (IS_CHROME) {
     NATIVE.runtime.onMessage.addListener((message, _sender) => {
       if (message?.type != 'treestyletab:compat-close-side-panel')
         return;
-      const url = new URL(location.href);
+      const url = new URL(window.location.href);
       if (!url.pathname.startsWith('/sidebar/'))
         return;
       NATIVE.windows.getCurrent().then(win => {
