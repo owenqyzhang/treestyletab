@@ -32,21 +32,25 @@ log.context = 'BG';
 
 MetricsData.add('index: Loaded');
 
-window.addEventListener('DOMContentLoaded', Background.init, { once: true });
+// In the MV3 service worker there is no DOMContentLoaded; start directly.
+if (typeof window == 'undefined')
+  Background.init();
+else
+  window.addEventListener('DOMContentLoaded', Background.init, { once: true });
 
-window.dumpMetricsData = () => {
+globalThis.dumpMetricsData = () => {
   return MetricsData.toString();
 };
-window.dumpLogs = () => {
+globalThis.dumpLogs = () => {
   return log.logs.join('\n');
 };
 
 RichConfirm.init(browser.runtime.getURL('/extlib/RichConfirmDialog.html'));
 
 // for old debugging method
-window.log = log;
-window.gMetricsData = MetricsData;
-window.Tab = Tab;
-window.TabsStore = TabsStore;
-window.SidebarConnection = SidebarConnection;
-window.configs = configs;
+globalThis.log = log;
+globalThis.gMetricsData = MetricsData;
+globalThis.Tab = Tab;
+globalThis.TabsStore = TabsStore;
+globalThis.SidebarConnection = SidebarConnection;
+globalThis.configs = configs;
