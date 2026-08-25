@@ -245,6 +245,11 @@ tab-sound-button */ {
 body {
   color-scheme: light dark;
   font: message-box; /* this is same to Firefox's UI. */
+  /* Chrome: without an explicit color, text inherits the UA default for
+     the resolved color-scheme, which can disagree with the tab bar
+     palette (white text on a light background). Anchor to the same
+     variable tab labels use so all text follows the actual palette. */
+  color: var(--tab-text, CanvasText);
 }
 
 #tabbar-container,

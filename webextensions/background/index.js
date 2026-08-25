@@ -8,10 +8,6 @@
 import RichConfirm from '/extlib/RichConfirm.js';
 import CrossContextMessaging from '/extlib/cross-context-messaging-bg.js';
 
-// Expose for common/tst-api.js: dynamic import() is disallowed in the
-// MV3 service worker, and this module must only load in the background.
-globalThis.__treestyletabCrossContextMessaging = CrossContextMessaging;
-
 import {
   log,
   configs
@@ -32,6 +28,12 @@ import './handle-tab-focus.js';
 import './handle-tab-multiselect.js';
 import './handle-tree-changes.js';
 import './sync-background.js';
+
+// Expose for common/tst-api.js and common/tabs-internal-operation.js:
+// dynamic import() is disallowed in the MV3 service worker, and this
+// module must only load in the background. Read at init() time, so
+// assigning after the imports is safe.
+globalThis.__treestyletabCrossContextMessaging = CrossContextMessaging; // eslint-disable-line no-underscore-dangle
 
 log.context = 'BG';
 

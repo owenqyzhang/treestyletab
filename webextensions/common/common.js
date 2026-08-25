@@ -160,7 +160,7 @@ export function isRightside() {
   // mozInnerScreenX is Firefox-only and `window` does not exist in the MV3
   // service worker: fall back to a config/RTL based guess on Chrome.
   if (typeof window == 'undefined' || window.mozInnerScreenX === undefined)
-    return configs.sidebarPosition == Constants.kTABBAR_POSITION_INVERTED || isRTL();
+    return configs.sidebarPosition == Constants.kTABBAR_POSITION_INVERTED || isRTL(); // eslint-disable-line no-use-before-define
   return window.mozInnerScreenX - window.screenX > (window.outerWidth - window.innerWidth) / 2;
 }
 
