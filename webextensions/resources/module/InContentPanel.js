@@ -349,7 +349,18 @@ export default class InContentPanel {
         return (async () => {
           // Ensure the order of messages: "show" for new target =>
           // "hide" for previous target.
-          await new Promise(requestAnimationFrame);
+          // Chrome throttles/suspends requestAnimationFrame in side
+          // panels far more aggressively than Firefox does in sidebars;
+          // a bare rAF await can stall hides for many frames while shows
+          // keep rendering, leaving a trail of zombie cards. Bound the
+          // wait with a timer fallback.
+          await new Promise(resolve => {
+            const timer = setTimeout(resolve, 50);
+            requestAnimationFrame(() => {
+              clearTimeout(timer);
+              resolve();
+            });
+          });
           if (!this.panel ||
               (message.targetId &&
                this.panel.dataset.targetId != message.targetId)) {
