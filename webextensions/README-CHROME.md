@@ -71,6 +71,19 @@ default branch; `manifest.firefox.json` preserves the original manifest.
 - Firefox theme integration (`browser.theme`) is stubbed; the sidebar uses
   its default light/dark styling.
 
+## Syncing with upstream
+
+The repo tracks `piroor/treestyletab` as the `upstream` remote. To pull
+their changes under the port:
+
+    git sync-upstream
+
+(a repo-local alias: fetches upstream, fast-forwards `trunk`, pushes it to
+the fork, and rebases `chrome-port` onto it). On conflicts, resolve and
+`git rebase --continue`. Afterwards re-verify (reload the unpacked
+extension; re-run `node tools/inline-mask-images.mjs` if upstream added
+masked icons) and `git push --force-with-lease origin chrome-port`.
+
 ## Development
 
 - `extlib/` is vendored on this branch (the port patches those files).
