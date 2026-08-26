@@ -343,8 +343,12 @@ export default class TabPreviewPanel extends InContentPanel {
             margin: 0;
 
             .title-line {
+              border-radius: 4px;
               line-height: 1.4;
-              padding-block: 2px;
+              /* Roomy rows with a real gap between them, so the hover
+                 highlight of one row never touches the neighbors' text. */
+              margin-block: 2px;
+              padding: 3px 8px;
             }
           }
 
