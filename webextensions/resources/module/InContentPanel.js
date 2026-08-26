@@ -561,14 +561,20 @@ export default class InContentPanel {
       let top;
       if (this.inSidebar) {
         this.log(`${this.type} updateUI/complete: in-sidebar, alignment calculating: `, { half: window.innerHeight, maxY, scale, anchorTabRect });
+        let topPx;
         if (anchorTabRect.top > (window.innerHeight / 2)) { // align to bottom edge of the tab
-          top = `${Math.min(maxY, anchorTabRect.bottom / scale) - panelHeight - anchorTabRect.height}px`;
-          this.log(`${this.type}  => align to bottom edge of the tab, top=`, top);
+          topPx = Math.min(maxY, anchorTabRect.bottom / scale) - panelHeight - anchorTabRect.height;
+          this.log(`${this.type}  => align to bottom edge of the tab, top=`, topPx);
         }
         else { // align to top edge of the tab
-          top = `${Math.max(0, anchorTabRect.top / scale) + anchorTabRect.height}px`;
-          this.log(`${this.type}  => align to top edge of the tab, top=`, top);
+          topPx = Math.max(0, anchorTabRect.top / scale) + anchorTabRect.height;
+          this.log(`${this.type}  => align to top edge of the tab, top=`, topPx);
         }
+        // Keep the whole panel inside the viewport: a tall collapsed-tree
+        // list would otherwise extend past the edge (its inner list is
+        // scrollable when clamped).
+        topPx = Math.max(4, Math.min(topPx, maxY - panelHeight - 4));
+        top = `${topPx}px`;
 
         this.log(`${this.type}  => top=`, top);
       }

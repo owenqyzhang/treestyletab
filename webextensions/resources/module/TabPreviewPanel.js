@@ -338,9 +338,29 @@ export default class TabPreviewPanel extends InContentPanel {
             margin: 0;
           }
 
+          /* Tall collapsed-tree lists: clamp the card to the viewport and
+             make the list itself scrollable (wheel + edge autoscroll). */
+          .in-content-panel {
+            max-height: calc(100dvh - 16px);
+          }
+          .in-content-panel-contents-inner-box {
+            display: flex;
+            flex-direction: column;
+            max-height: calc(100dvh - 16px - 2px); /* minus the border */
+            min-height: 0;
+          }
           .in-content-panel-extended-content {
+            flex: 0 1 auto;
             line-height: 1.4;
             margin: 0;
+            min-height: 0;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+
+            /* deeper indent for nested levels of the tree list */
+            ul ul {
+              margin-inline: calc(var(--panel-padding-inline) * 1.5) 0;
+            }
 
             .title-line {
               border-radius: 4px;
@@ -433,6 +453,55 @@ export default class TabPreviewPanel extends InContentPanel {
       if (preview.src)
         preview.classList.remove('loading');
     });
+
+    // Edge autoscroll for tall collapsed-tree lists: when the card is
+    // clamped to the viewport and its list overflows, hovering near the
+    // list's top/bottom edge scrolls it (a timer, not rAF: Chrome
+    // throttles rAF in side panels).
+    const extendedContent = this.panel.querySelector('.in-content-panel-extended-content');
+    const EDGE_SCROLL_ZONE_PX      = 28;
+    const EDGE_SCROLL_MAX_PX_TICK  = 8;
+    let edgeScrollTimer = 0;
+    let edgeScrollSpeed = 0;
+    const stopEdgeScroll = () => {
+      if (edgeScrollTimer) {
+        clearInterval(edgeScrollTimer);
+        edgeScrollTimer = 0;
+      }
+      edgeScrollSpeed = 0;
+    };
+    this.panel.addEventListener('pointermove', event => {
+      if (!extendedContent ||
+          extendedContent.scrollHeight <= extendedContent.clientHeight) {
+        stopEdgeScroll();
+        return;
+      }
+      const rect = extendedContent.getBoundingClientRect();
+      let speed = 0;
+      if (event.clientY < rect.top + EDGE_SCROLL_ZONE_PX) {
+        const strength = Math.min(EDGE_SCROLL_ZONE_PX, (rect.top + EDGE_SCROLL_ZONE_PX) - event.clientY) / EDGE_SCROLL_ZONE_PX;
+        speed = -Math.ceil(strength * EDGE_SCROLL_MAX_PX_TICK);
+      }
+      else if (event.clientY > rect.bottom - EDGE_SCROLL_ZONE_PX) {
+        const strength = Math.min(EDGE_SCROLL_ZONE_PX, event.clientY - (rect.bottom - EDGE_SCROLL_ZONE_PX)) / EDGE_SCROLL_ZONE_PX;
+        speed = Math.ceil(strength * EDGE_SCROLL_MAX_PX_TICK);
+      }
+      edgeScrollSpeed = speed;
+      if (speed == 0) {
+        stopEdgeScroll();
+      }
+      else if (!edgeScrollTimer) {
+        edgeScrollTimer = setInterval(() => {
+          if (!edgeScrollSpeed ||
+              !extendedContent.isConnected) {
+            stopEdgeScroll();
+            return;
+          }
+          extendedContent.scrollTop += edgeScrollSpeed;
+        }, 16);
+      }
+    });
+    this.panel.addEventListener('pointerleave', stopEdgeScroll);
   }
 
   onUpdateUI({ targetId, title, url, contextualIdentity, tooltipHtml, hasPreview, previewURL, memoryUsageMB, complete, scale, ...params }) {
