@@ -42,6 +42,12 @@ function log(...args) {
 
 const hoveringItemIds = new Set();
 let mLastHoverItemId = -1;
+// tab id whose collapsed-tree (extended) card is currently shown
+let mShownExtendedForTabId = null;
+// a row entered while an extended card is open: the show is dwell-gated
+// so a quick transit toward the card does not replace/close it
+let mDeferredEnter = null;
+let mDelayedHideOnTabSubstanceLeaveTimer = 0;
 
 const mTabPreviewPanel = new TabPreviewPanel(document.querySelector('#tabPreviewRoot'));
 const mController = new InContentPanelController({
@@ -161,7 +167,7 @@ async function onTabSubstanceEnter(event) {
         mShownExtendedForTabId !== null &&
         mShownExtendedForTabId != gateRaw.id
       );
-      const dwellMsec = replacesExtendedCard ? 600 : 100;
+      const dwellMsec = replacesExtendedCard ? 800 : 100;
       if (mDeferredEnter)
         clearTimeout(mDeferredEnter.timer);
       hoveringItemIds.add(gateRaw.id);
@@ -171,8 +177,13 @@ async function onTabSubstanceEnter(event) {
           mDeferredEnter = null;
           if (!hoveringItemIds.has(gateRaw.id))
             return; // already left: it was just a transit
-          event.__tstDwellReplay = true;
-          onTabSubstanceEnter(event);
+          // Tab row elements can be rebuilt while the dwell elapses
+          // (title/favicon/state updates); a stale detached element would
+          // silently produce no card, so re-resolve the live one.
+          const liveSubstance = TreeItem.get(gateRaw.id)?.$TST?.element?.substanceElement;
+          if (!liveSubstance?.raw)
+            return; // the tab is gone
+          onTabSubstanceEnter({ target: liveSubstance, __tstDwellReplay: true });
         }, dwellMsec),
       };
     }
@@ -314,13 +325,6 @@ async function onTabSubstanceEnter(event) {
 }
 onTabSubstanceEnter = EventUtils.wrapWithErrorHandler(onTabSubstanceEnter);
 
-// tab id whose collapsed-tree (extended) card is currently shown
-let mShownExtendedForTabId = null;
-// a row entered while an extended card is open: the show is deferred
-// so a quick transit toward the card does not replace/close it
-let mDeferredEnter = null;
-
-let mDelayedHideOnTabSubstanceLeaveTimer = 0;
 
 // Delayed hide for an open collapsed-tree card. At expiry the card is
 // kept (and the timer re-armed) while the pointer is inside the card or
@@ -399,12 +403,37 @@ function hideOnUserAction(timestamp) {
 }
 
 let mDelayedHideOnTabbarLeaveTimer = 0;
+
+// Deterministic keep-alive while the pointer is inside the card:
+// entering it cancels every pending delayed hide (no timer-phase luck
+// involved), leaving it re-arms the delayed hide.
+const mPreviewRoot = document.querySelector('#tabPreviewRoot');
+mPreviewRoot.addEventListener('pointerenter', () => {
+  if (mDelayedHideOnTabSubstanceLeaveTimer) {
+    clearTimeout(mDelayedHideOnTabSubstanceLeaveTimer);
+    mDelayedHideOnTabSubstanceLeaveTimer = 0;
+  }
+  if (mDelayedHideOnTabbarLeaveTimer) {
+    clearTimeout(mDelayedHideOnTabbarLeaveTimer);
+    mDelayedHideOnTabbarLeaveTimer = 0;
+  }
+});
+mPreviewRoot.addEventListener('pointerleave', () => {
+  if (mShownExtendedForTabId !== null)
+    scheduleExtendedCardHide();
+});
+
 document.querySelector('#tabbar').addEventListener('mouseleave', () => {
   const timestamp = Date.now();
   log('mouse is left from the tab bar ', timestamp);
   const item = TreeItem.get(mLastHoverItemId);
   const itemElement = item?.$TST?.element;
-  if (itemElement?.substanceElement?.hasCustomTooltip) {
+  // The DOM lookup can fail transiently (row elements are rebuilt on tab
+  // updates); while a collapsed-tree card is shown we must always take
+  // the grace branch, otherwise entering the card (= leaving the tab
+  // bar) would hide it instantly.
+  if (itemElement?.substanceElement?.hasCustomTooltip ||
+      mShownExtendedForTabId !== null) {
     if (mDelayedHideOnTabbarLeaveTimer) {
       clearTimeout(mDelayedHideOnTabbarLeaveTimer);
     }
