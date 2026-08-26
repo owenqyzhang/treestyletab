@@ -688,7 +688,7 @@
     "message": " button in the toolbar, to activate the sidebar panel."
   },
   "message_startup_description_sync_before": {
-    "message": "Tabs can be sent via Firefox Sync only to devices with TST installed. Please activate Firefox Sync in Firefox's options first, and install TST on your other devices as well. Moreover,"
+    "message": "Tabs can be sent via browser sync only to devices with TST installed. Please sign in to the browser and enable sync of extension data, "
   },
   "message_startup_description_sync_link": {
     "message": "the device name should be configured manually"
@@ -1230,25 +1230,25 @@
     "message": "Suppress top-level group tab when opened tabs are already organized as a tree"
   },
   "config_sendTabsToDevice_caption": {
-    "message": "Send Tabs to Other Devices with the context menu via Firefox Sync"
+    "message": "Send Tabs to Other Devices with the context menu (via browser sync)"
   },
   "config_syncRequirements_description": {
-    "message": "This feature depends on Firefox Sync, and tabs can be sent only to devices with TST installed. Please activate Firefox Sync in the browser's options first, and install TST on your other devices as well."
+    "message": "This feature depends on the browser's extension data sync (Chrome Sync on Chrome), and tabs can be sent only to devices with TST installed. Please sign in to the browser on all devices and keep sync enabled."
   },
   "config_syncDeviceInfo_name_label": {
     "message": "Name and icon of this device:"
   },
   "config_syncDeviceInfo_name_description_before": {
-    "message": "TST cannot detect the name of this device you configured for Firefox Sync, due to restrictions of WebExtensions API. Please set an identifiable name for this device manually. (It is recommended to copy "
+    "message": "The browser does not expose its sync device name to extensions, so please set a display name for this device here."
   },
   "config_syncDeviceInfo_name_description_link": {
-    "message": "the device name for Firefox Sync"
+    "message": ""
   },
   "config_syncDeviceInfo_name_description_href": {
     "message": "https://accounts.firefox.com/settings/clients"
   },
   "config_syncDeviceInfo_name_description_after": {
-    "message": ".)"
+    "message": ""
   },
   "config_syncDeviceExpirationDays_label_before": {
     "message": "Expire unused devices automatically when they are not connected over "

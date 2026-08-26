@@ -212,7 +212,7 @@ export const configs = new Configs({
 
   counterRole: Constants.kCOUNTER_ROLE_CONTAINED_TABS,
 
-  baseIndent:                     24,
+  baseIndent:                     18,
   minIndent:                      Constants.kDEFAULT_MIN_INDENT,
   // 0 / blank = the browser's default UI font (see sidebar/styles/base.css)
   sidebarFontSize:                0,
@@ -237,7 +237,9 @@ export const configs = new Configs({
   showOverflowTitleByTooltip:                       true,
   showCollapsedDescendantsByTooltip:                true,
   showCollapsedDescendantsByLegacyTooltipOnSidebar: false,
-  showCollapsedDescendantsMouseleaveMaxDelay:       500,
+  // Generous grace period so the pointer can travel into the hover card
+  // and click items in the collapsed-tree list.
+  showCollapsedDescendantsMouseleaveMaxDelay:       1200,
   tabGroupMenuPanelRenderIn:                        Constants.kIN_CONTENT_PANEL_RENDER_IN_ANYWHERE,
 
   showDialogInSidebar: false,

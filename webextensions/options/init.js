@@ -421,7 +421,9 @@ async function initOtherDevices() {
   range.deleteContents();
   range.detach();
   for (const device of devices) {
-    const icon = device.icon ? `<img src="/resources/icons/${sanitizeForHTMLText(device.icon)}.svg">` : '';
+    // SVG icons using fill="context-fill" are invisible as plain <img> on
+    // Chrome, so they are rendered as CSS masks instead. (see options.css)
+    const icon = device.icon ? `<span class="device-icon" data-icon="${sanitizeForHTMLText(device.icon)}"></span>` : '';
     container.insertAdjacentHTML('beforeend', `
       <li id="otherDevice:${sanitizeForHTMLText(String(device.id))}"
          ><label>${icon}${sanitizeForHTMLText(String(device.name))}
@@ -625,6 +627,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   try {
     focusedItem = initFocusedItem();
     initCollapsibleSections({ focusedItem });
+    initSectionNav();
     initPermissionOptions();
     initLogCheckboxes();
     initPreviews();
@@ -774,6 +777,49 @@ function initFocusedItem() {
   }
 
   return focusedItem;
+}
+
+function initSectionNav() {
+  const nav = document.createElement('nav');
+  nav.id = 'options-nav';
+
+  const heading = nav.appendChild(document.createElement('h2'));
+  heading.textContent = document.title;
+
+  const links = [];
+  for (const section of document.querySelectorAll('body > section[id]')) {
+    const sectionHeading = section.querySelector('h1');
+    if (!sectionHeading)
+      continue;
+    const link = nav.appendChild(document.createElement('a'));
+    link.href = `#${section.id}`;
+    link.textContent = sectionHeading.textContent.trim();
+    link.addEventListener('click', () => {
+      // expand a collapsed section when it is chosen from the navigation
+      if (!section.classList.contains('collapsed'))
+        return;
+      section.classList.remove('collapsed');
+      if (!configs.optionsExpandedSections.includes(section.id))
+        configs.optionsExpandedSections = configs.optionsExpandedSections.concat([section.id]);
+    });
+    links.push([section, link]);
+  }
+  document.body.insertBefore(nav, document.body.firstChild);
+
+  const highlightCurrentSection = () => {
+    const scrolledOffset = window.scrollY + (window.innerHeight / 4);
+    let current = links.length > 0 && links[0][1];
+    for (const [section, link] of links) {
+      if (section.offsetTop <= scrolledOffset)
+        current = link;
+    }
+    for (const [, link] of links) {
+      link.classList.toggle('current', link == current);
+    }
+  };
+  window.addEventListener('scroll', highlightCurrentSection, { passive: true });
+  window.addEventListener('resize', highlightCurrentSection);
+  highlightCurrentSection();
 }
 
 function initCollapsibleSections({ focusedItem }) {

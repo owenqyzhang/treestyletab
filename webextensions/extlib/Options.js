@@ -239,6 +239,12 @@ class Options {
         node.checked = !!this.configs[key];
       }
       else {
+        // Don't overwrite a field the user is typing in: async config
+        // change echoes can arrive after the anti-echo flag was cleared
+        // and would revert the newest keystrokes.
+        if (node == document.activeElement &&
+            node.matches('input, textarea'))
+          continue;
         node.value = this.configValueToUIValue(this.configs[key]);
       }
       this.applyLocked(node, key);
