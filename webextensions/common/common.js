@@ -243,9 +243,7 @@ export const configs = new Configs({
   showOverflowTitleByTooltip:                       true,
   showCollapsedDescendantsByTooltip:                true,
   showCollapsedDescendantsByLegacyTooltipOnSidebar: false,
-  // Generous grace period so the pointer can travel into the hover card
-  // and click items in the collapsed-tree list.
-  showCollapsedDescendantsMouseleaveMaxDelay:       1200,
+  showCollapsedDescendantsMouseleaveMaxDelay:       500,
   tabGroupMenuPanelRenderIn:                        Constants.kIN_CONTENT_PANEL_RENDER_IN_ANYWHERE,
 
   showDialogInSidebar: false,
