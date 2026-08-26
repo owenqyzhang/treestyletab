@@ -17,9 +17,18 @@
 
 .menu-ui.menu-ui.menu-ui.menu,
 .menu-ui.menu-ui.menu-ui.menu ul {
-  border: 1px solid color-mix(in srgb, CanvasText 15%, transparent);
+  /* Chrome's menu surface greys (white / elevated grey, not near-black
+     Canvas). --tst-context-menu-transparency (0% = opaque) is set from
+     the "Context menu transparency" option; the backdrop blur gives the
+     macOS translucent-menu look when transparency is used. */
+  backdrop-filter: blur(16px);
+  background: color-mix(in srgb,
+                        light-dark(#ffffff, #3c4043) calc(100% - var(--tst-context-menu-transparency, 0%)),
+                        transparent) !important;
+  border: 1px solid light-dark(#dadce0, rgba(255, 255, 255, 0.15));
   border-radius: 8px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  color: light-dark(#202124, #e8eaed);
   font: 13px system-ui;
   padding-block: 5px;
 }
