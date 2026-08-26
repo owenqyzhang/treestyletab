@@ -447,12 +447,25 @@ function buildCompatBrowser(chrome) {
     delete sanitized.viewTypes;
     delete sanitized.command;
     if (sanitized.contexts) {
-      const contexts = sanitized.contexts
-        .map(context => context == 'browser_action' ? 'action' : context)
+      // Firefox's "tab" context has no Chrome equivalent; register such
+      // items as "page" items scoped to the sidebar document instead, so
+      // they appear (nested under the extension name) in the browser's
+      // native context menu on the sidebar. They only become reachable
+      // when the sidebar lets the native menu through
+      // (configs.useNativeContextMenu); otherwise the sidebar suppresses
+      // the native menu and these registrations stay invisible.
+      const hadTabContext = sanitized.contexts.includes('tab');
+      const contexts = Array.from(new Set(sanitized.contexts
+        .map(context =>
+          context == 'browser_action' ? 'action' :
+            context == 'tab' ? 'page' :
+              context)))
         .filter(context => SUPPORTED_CONTEXTS.has(context));
       if (contexts.length == 0)
         return null;
       sanitized.contexts = contexts;
+      if (hadTabContext && !sanitized.documentUrlPatterns)
+        sanitized.documentUrlPatterns = [chrome.runtime.getURL('sidebar/') + '*'];
     }
     return sanitized;
   }

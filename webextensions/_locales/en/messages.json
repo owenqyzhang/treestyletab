@@ -2653,5 +2653,14 @@
   },
   "config_sidebarFont_description": {
     "message": "By default the sidebar uses the browser UI font. Set a size or family here to override it."
+  },
+  "config_useNativeContextMenu_label": {
+    "message": "Use the browser's native context menu on tabs (experimental)"
+  },
+  "config_useNativeContextMenu_description": {
+    "message": "Tree Style Tab's commands appear under a \"Tree Style Tab\" submenu of the regular page context menu, below the browser's own items. Item states (checked/enabled marks) may lag one open behind."
+  },
+  "config_contextMenuTransparency_label": {
+    "message": "Emulated context menu transparency (%, 0 = opaque)"
   }
 }

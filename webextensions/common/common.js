@@ -217,6 +217,12 @@ export const configs = new Configs({
   // 0 / blank = the browser's default UI font (see sidebar/styles/base.css)
   sidebarFontSize:                0,
   sidebarFontFamily:              '',
+  // Chrome port: show the browser's native context menu on tab rows
+  // (TST's items appear under a "Tree Style Tab" submenu) instead of
+  // the emulated in-sidebar menu.
+  useNativeContextMenu:           false,
+  // 0-90 (%): transparency of the emulated context menu.
+  contextMenuTransparency:        0,
   maxTreeLevel:                   -1,
   indentAutoShrink:               true,
   indentAutoShrinkOnlyForVisible: true,

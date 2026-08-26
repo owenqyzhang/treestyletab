@@ -764,6 +764,18 @@ async function onContextMenu(event) {
   if (tab &&
       !modifierKeyPressed) {
     if (IS_CHROME) {
+      if (configs.useNativeContextMenu) {
+        // Let the browser's native context menu appear (TST's items are
+        // registered for the sidebar document and appear under the
+        // "Tree Style Tab" submenu). The click event won't tell the
+        // background which tab the menu was for, so record it now.
+        log('onContextMenu: let the native context menu show for ', tab.id);
+        browser.runtime.sendMessage({
+          type:  'treestyletab:notify-native-context-menu-target',
+          tabId: tab.id,
+        }).catch(_error => {});
+        return; // no preventDefault: the native menu opens
+      }
       // Chrome cannot override the native context menu: always show
       // the emulated menu regardless of configs.emulateDefaultContextMenu.
       log('onContextMenu: show emulated context menu instead of overridden context');

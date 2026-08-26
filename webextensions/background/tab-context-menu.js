@@ -337,6 +337,19 @@ const SIDEBAR_URL_PATTERN = [`${Constants.kSHORTHAND_URIS.tabbar}*`];
 
 let mInitialized = false;
 
+// Chrome native context menu mode: the sidebar records which tab a
+// native context menu was opened for, because contextMenus.onClicked
+// cannot tell (the click happens on the sidebar document, not a tab).
+const NATIVE_MENU_TARGET_LIFETIME_MSEC = 30 * 1000;
+let mNativeMenuTargetTabId     = null;
+let mNativeMenuTargetTimestamp = 0;
+browser.runtime.onMessage.addListener((message, _sender) => {
+  if (message?.type != 'treestyletab:notify-native-context-menu-target')
+    return;
+  mNativeMenuTargetTabId     = message.tabId;
+  mNativeMenuTargetTimestamp = Date.now();
+});
+
 browser.runtime.onMessage.addListener(onMessage);
 browser.menus.onShown.addListener(onShown);
 browser.menus.onHidden.addListener(onHidden);
@@ -1350,6 +1363,17 @@ function onHidden() {
 async function onClick(info, contextTab) {
   if (!mInitialized)
     return;
+
+  // Clicks from the browser's native context menu on the sidebar page
+  // (Chrome native mode) don't carry the right-clicked tab: use the tab
+  // recorded by the sidebar when the menu was opened.
+  if (info.pageUrl &&
+      info.pageUrl.startsWith(browser.runtime.getURL('sidebar/')) &&
+      mNativeMenuTargetTabId !== null &&
+      Date.now() - mNativeMenuTargetTimestamp < NATIVE_MENU_TARGET_LIFETIME_MSEC) {
+    contextTab = { id: mNativeMenuTargetTabId };
+    mNativeMenuTargetTabId = null;
+  }
 
   contextTab = Tab.get(contextTab?.id);
   const win       = await browser.windows.getLastFocused({ populate: true }).catch(ApiTabs.createErrorHandler());

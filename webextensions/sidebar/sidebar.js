@@ -228,6 +228,7 @@ export async function init() {
   onConfigChange('simulateSVGContextFill');
   onConfigChange('sidebarFontSize');
   onConfigChange('sidebarFontFamily');
+  onConfigChange('contextMenuTransparency');
   onInit.dispatch();
 
   const promisedScrollPosition = browser.sessions.getWindowValue(mTargetWindow, Constants.kWINDOW_STATE_SCROLL_POSITION).catch(ApiTabs.createErrorHandler());
@@ -1081,6 +1082,12 @@ async function onConfigChange(changedKey) {
     case 'sidebarFontFamily':
       document.documentElement.style.fontFamily = String(configs.sidebarFontFamily || '').trim();
       break;
+
+    case 'contextMenuTransparency': {
+      const transparency = Math.max(0, Math.min(90, Number(configs.contextMenuTransparency) || 0));
+      document.documentElement.style.setProperty('--tst-context-menu-transparency', `${transparency}%`);
+      break;
+    }
 
     case 'enableWorkaroundForBug1763420_reloadMaskImage':
       mReloadMaskImage = configs[changedKey];
