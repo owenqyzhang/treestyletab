@@ -141,7 +141,21 @@ function reserveToFlushMessages() {
   };
   // Because sidebar is always visible, we may not need to avoid using
   // window.requestAnimationFrame.
-  window.requestAnimationFrame(mOnFrame);
+  // ...on Firefox. Chrome throttles/suspends rAF whenever it considers
+  // the document hidden or occluded, which would freeze the whole
+  // sidebar-to-background message channel (while direct heartbeats keep
+  // the connection alive): commands like tab activation would silently
+  // queue forever. A timer fallback guarantees the flush.
+  const flush = mOnFrame;
+  const fallbackTimer = setTimeout(() => {
+    if (mOnFrame === flush)
+      flush();
+  }, 50);
+  window.requestAnimationFrame(() => {
+    clearTimeout(fallbackTimer);
+    if (mOnFrame === flush)
+      flush();
+  });
 }
 
 async function onConnectionMessage(message) {
