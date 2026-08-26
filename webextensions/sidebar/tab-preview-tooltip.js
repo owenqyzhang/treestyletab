@@ -49,6 +49,31 @@ let mShownExtendedForTabId = null;
 let mDeferredEnter = null;
 let mDelayedHideOnTabSubstanceLeaveTimer = 0;
 
+// Temporary diagnostics for the hover card lifecycle: a ring buffer of
+// events mirrored to storage.local, readable from any extension page via
+// browser.storage.local.get('tst-hover-debug'). Remove once stable.
+const HOVER_DEBUG_BUILD = 'hover-debug 2026-08-26a';
+const mHoverDebugLog = [];
+let mHoverDebugFlushTimer = null;
+function hoverDebug(...args) {
+  mHoverDebugLog.push(`${String(Date.now() % 1000000).padStart(6, '0')} ${args.join(' ')}`);
+  if (mHoverDebugLog.length > 100)
+    mHoverDebugLog.shift();
+  if (mHoverDebugFlushTimer)
+    return;
+  mHoverDebugFlushTimer = setTimeout(() => {
+    mHoverDebugFlushTimer = null;
+    browser.storage.local.set({
+      'tst-hover-debug': {
+        build: HOVER_DEBUG_BUILD,
+        at:    Date.now(),
+        log:   [...mHoverDebugLog],
+      },
+    }).catch(_error => {});
+  }, 500);
+}
+hoverDebug('sidebar-loaded');
+
 const mTabPreviewPanel = new TabPreviewPanel(document.querySelector('#tabPreviewRoot'));
 const mController = new InContentPanelController({
   type:   TabPreviewPanel.TYPE,
@@ -171,18 +196,24 @@ async function onTabSubstanceEnter(event) {
       if (mDeferredEnter)
         clearTimeout(mDeferredEnter.timer);
       hoveringItemIds.add(gateRaw.id);
+      hoverDebug('enter-gate', gateRaw.id, 'dwell=' + dwellMsec, 'ext=' + mShownExtendedForTabId);
       mDeferredEnter = {
         tabId: gateRaw.id,
         timer: setTimeout(() => {
           mDeferredEnter = null;
-          if (!hoveringItemIds.has(gateRaw.id))
+          if (!hoveringItemIds.has(gateRaw.id)) {
+            hoverDebug('dwell-cancelled-left', gateRaw.id);
             return; // already left: it was just a transit
+          }
           // Tab row elements can be rebuilt while the dwell elapses
           // (title/favicon/state updates); a stale detached element would
           // silently produce no card, so re-resolve the live one.
           const liveSubstance = TreeItem.get(gateRaw.id)?.$TST?.element?.substanceElement;
-          if (!liveSubstance?.raw)
+          if (!liveSubstance?.raw) {
+            hoverDebug('dwell-stale-element', gateRaw.id);
             return; // the tab is gone
+          }
+          hoverDebug('dwell-replay', gateRaw.id);
           onTabSubstanceEnter({ target: liveSubstance, __tstDwellReplay: true });
         }, dwellMsec),
       };
@@ -256,6 +287,7 @@ async function onTabSubstanceEnter(event) {
   if (!substance.raw)
     return;
 
+  hoverDebug('enter-show', raw.id, 'custom=' + hasCustomTooltip);
   log(`onTabSubstanceEnter(${raw.id}}) start `, { hasCustomTooltip }, timestamp);
 
   hoveringItemIds.add(raw.id);
@@ -309,6 +341,7 @@ async function onTabSubstanceEnter(event) {
   if (!substance.raw) // the tab may be destroyed while capturing tab preview
     return;
 
+  hoverDebug('show-result', raw.id, 'ok=' + succeeded, 'custom=' + hasCustomTooltip);
   if (succeeded) {
     mShownExtendedForTabId = hasCustomTooltip ? raw.id : null;
     // A stale delayed hide from a previous transit must not kill the
@@ -333,15 +366,20 @@ onTabSubstanceEnter = EventUtils.wrapWithErrorHandler(onTabSubstanceEnter);
 function scheduleExtendedCardHide() {
   if (mDelayedHideOnTabSubstanceLeaveTimer)
     clearTimeout(mDelayedHideOnTabSubstanceLeaveTimer);
+  hoverDebug('ext-hide-armed', 'ext=' + mShownExtendedForTabId);
   mDelayedHideOnTabSubstanceLeaveTimer = setTimeout(() => {
     mDelayedHideOnTabSubstanceLeaveTimer = 0;
-    if (mShownExtendedForTabId === null)
+    if (mShownExtendedForTabId === null) {
+      hoverDebug('ext-hide-skip-null');
       return; // already replaced or hidden through another path
+    }
     if (document.querySelector('.in-content-panel-root.tab-preview-panel.extended .in-content-panel:hover') ||
         mDeferredEnter) {
+      hoverDebug('ext-hide-rearm', 'defer=' + (mDeferredEnter?.tabId ?? 'no'));
       scheduleExtendedCardHide();
       return;
     }
+    hoverDebug('ext-hide-fire');
     mLastHoverItemId = -1;
     mShownExtendedForTabId = null;
     mController.hide({ timestamp: Date.now() });
@@ -358,11 +396,13 @@ async function onTabSubstanceLeave(event) {
   hoveringItemIds.delete(raw.id);
 
   if (substance?.hasCustomTooltip) {
+    hoverDebug('leave-custom', raw.id);
     scheduleExtendedCardHide();
   }
   else {
     if (mDeferredEnter?.tabId == raw.id) {
       // Transit across this row never showed a card: nothing to hide.
+      hoverDebug('leave-transit', raw.id, 'ext=' + mShownExtendedForTabId);
       clearTimeout(mDeferredEnter.timer);
       mDeferredEnter = null;
       if (mShownExtendedForTabId !== null)
@@ -371,9 +411,11 @@ async function onTabSubstanceLeave(event) {
     }
     if (mShownExtendedForTabId !== null &&
         mShownExtendedForTabId != raw.id) {
+      hoverDebug('leave-keep-ext', raw.id);
       scheduleExtendedCardHide(); // keep the open collapsed-tree card
       return;
     }
+    hoverDebug('leave-hide-simple', raw.id);
     mShownExtendedForTabId = null;
     mController.hide({ targetItem: raw, timestamp });
   }
@@ -386,6 +428,7 @@ Sidebar.onReady.addListener(() => {
 });
 
 function hideOnUserAction(timestamp) {
+  hoverDebug('hide-user-action');
   hoveringItemIds.clear();
   mLastHoverItemId = -1;
 
@@ -409,6 +452,7 @@ let mDelayedHideOnTabbarLeaveTimer = 0;
 // involved), leaving it re-arms the delayed hide.
 const mPreviewRoot = document.querySelector('#tabPreviewRoot');
 mPreviewRoot.addEventListener('pointerenter', () => {
+  hoverDebug('card-enter');
   if (mDelayedHideOnTabSubstanceLeaveTimer) {
     clearTimeout(mDelayedHideOnTabSubstanceLeaveTimer);
     mDelayedHideOnTabSubstanceLeaveTimer = 0;
@@ -419,6 +463,7 @@ mPreviewRoot.addEventListener('pointerenter', () => {
   }
 });
 mPreviewRoot.addEventListener('pointerleave', () => {
+  hoverDebug('card-leave', 'ext=' + mShownExtendedForTabId);
   if (mShownExtendedForTabId !== null)
     scheduleExtendedCardHide();
 });
