@@ -299,11 +299,14 @@ export default class TabPreviewPanel extends InContentPanel {
            panel rendered in the sidebar (the only available mode on Chrome). */
         &.in-sidebar {
           .in-content-panel {
-            background: Canvas;
-            border: 1px solid color-mix(in srgb, CanvasText 15%, transparent);
+            /* Chrome's hover card surface: white in light mode, an
+               ELEVATED grey (not the near-black Canvas) in dark mode.
+               Values follow Chrome's grey tokens. */
+            background: light-dark(#ffffff, #3c4043);
+            border: 1px solid light-dark(#dadce0, rgba(255, 255, 255, 0.12));
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-            color: CanvasText;
+            color: light-dark(#202124, #e8eaed);
             font: 13px system-ui;
             line-height: 1.4;
 
@@ -326,7 +329,7 @@ export default class TabPreviewPanel extends InContentPanel {
           }
 
           .in-content-panel-url {
-            color: color-mix(in srgb, CanvasText 65%, transparent);
+            color: light-dark(#5f6368, #9aa0a6);
             margin: 0;
             opacity: 1;
           }
@@ -346,8 +349,8 @@ export default class TabPreviewPanel extends InContentPanel {
           }
 
           .in-content-panel-memory-usage {
-            border-block-start: 1px solid color-mix(in srgb, CanvasText 10%, transparent);
-            color: color-mix(in srgb, CanvasText 65%, transparent);
+            border-block-start: 1px solid light-dark(#e8eaed, rgba(255, 255, 255, 0.1));
+            color: light-dark(#5f6368, #9aa0a6);
             margin: 6px 0 0;
             opacity: 1;
             padding-block-start: 6px;

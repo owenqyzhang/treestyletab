@@ -674,7 +674,7 @@ BookmarkTabsDialog.FOLDER_CHOOSER_STYLE = `
     fill: currentColor;
     height: var(--icon-size);
     line-height: 1;
-    mask: url("${browser.runtime.getURL('/sidebar/styles/icons/ArrowheadDown.svg')}") no-repeat center / 60%;
+    mask: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 viewBox=%220 0 16 16%22%3E%3Cpath fill=%22black%22 d=%22M8 12a1 1 0 0 1-.707-.293l-5-5a1 1 0 0 1 1.414-1.414L8 9.586l4.293-4.293a1 1 0 0 1 1.414 1.414l-5 5A1 1 0 0 1 8 12z%22%3E%3C/path%3E%3C/svg%3E") no-repeat center / 60%;
     max-height: var(--icon-size);
     max-width: var(--icon-size);
     transform-origin: 50% 50%;
@@ -758,7 +758,7 @@ BookmarkTabsDialog.FOLDER_CHOOSER_STYLE = `
     display: inline-block;
     height: 1em;
     line-height: 1;
-    mask: url("${browser.runtime.getURL('/sidebar/styles/icons/ArrowheadDown.svg')}") no-repeat center / 60%;
+    mask: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 viewBox=%220 0 16 16%22%3E%3Cpath fill=%22black%22 d=%22M8 12a1 1 0 0 1-.707-.293l-5-5a1 1 0 0 1 1.414-1.414L8 9.586l4.293-4.293a1 1 0 0 1 1.414 1.414l-5 5A1 1 0 0 1 8 12z%22%3E%3C/path%3E%3C/svg%3E") no-repeat center / 60%;
     max-height: 1em;
     max-width: 1em;
     transform-origin: 50% 50%;
@@ -788,7 +788,7 @@ BookmarkTabsDialog.FOLDER_CHOOSER_STYLE = `
     display: inline-block;
     height: var(--icon-size);
     line-height: 1;
-    mask: url("${browser.runtime.getURL('/resources/icons/folder-16.svg')}") no-repeat center / 60%;
+    mask: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 viewBox=%220 0 16 16%22%3E %3Cpath fill=%22black%22 d=%22M14 3H8.151L6.584 1.538A2 2 0 0 0 5.219 1H2a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM5.219 3l1.072 1H2V3zM14 13H2V5h6v-.014c.05 0 .1.014.151.014H14z%22%3E%3C/path%3E %3C/svg%3E") no-repeat center / 60%;
     max-height: var(--icon-size);
     max-width: var(--icon-size);
     order: 2;
