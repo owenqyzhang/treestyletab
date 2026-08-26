@@ -213,7 +213,15 @@ async function onTabSubstanceEnter(event) {
             hoverDebug('dwell-stale-element', gateRaw.id);
             return; // the tab is gone
           }
-          hoverDebug('dwell-replay', gateRaw.id);
+          // Recompute the tooltip state right now: invalidateTooltip()
+          // force-resets hasCustomTooltip to false and defers recomputation
+          // to the next real mouseover, and a REBUILT row element (tab
+          // updates/moves) has no computed state and no pending lazy update
+          // at all — either way, without this, collapsed-tree rows get
+          // misclassified as plain tabs and the whole extended-card
+          // handling stays inert.
+          liveSubstance.updateTooltip?.();
+          hoverDebug('dwell-replay', gateRaw.id, 'custom=' + liveSubstance.hasCustomTooltip);
           onTabSubstanceEnter({ target: liveSubstance, __tstDwellReplay: true });
         }, dwellMsec),
       };
@@ -353,8 +361,13 @@ async function onTabSubstanceEnter(event) {
   }
 
   if (substance.closest('tab-item')?.parentNode &&
-      succeeded)
+      succeeded) {
     substance.invalidateTooltip();
+    // invalidateTooltip() leaves hasCustomTooltip force-false until the
+    // next real mouseover; recompute immediately so later reads (leave
+    // branch decisions, re-hovers) see the true state.
+    substance.flushTooltipUpdate();
+  }
 }
 onTabSubstanceEnter = EventUtils.wrapWithErrorHandler(onTabSubstanceEnter);
 
@@ -395,7 +408,12 @@ async function onTabSubstanceLeave(event) {
 
   hoveringItemIds.delete(raw.id);
 
-  if (substance?.hasCustomTooltip) {
+  // Branch on our own record of the shown card, not on
+  // substance.hasCustomTooltip: invalidateTooltip() (called after every
+  // show) force-resets that flag to false, which would misroute the
+  // origin row's leave into the instant-hide path and kill the card.
+  if (substance?.hasCustomTooltip ||
+      mShownExtendedForTabId == raw.id) {
     hoverDebug('leave-custom', raw.id);
     scheduleExtendedCardHide();
   }
@@ -468,9 +486,17 @@ mPreviewRoot.addEventListener('pointerleave', () => {
     scheduleExtendedCardHide();
 });
 
-document.querySelector('#tabbar').addEventListener('mouseleave', () => {
+document.querySelector('#tabbar').addEventListener('mouseleave', event => {
   const timestamp = Date.now();
   log('mouse is left from the tab bar ', timestamp);
+  // The card overlays the tab bar but lives outside it in the DOM, so
+  // moving the pointer into the card IS a tab bar mouseleave: never
+  // treat that as leaving.
+  if (event.relatedTarget && mPreviewRoot.contains(event.relatedTarget)) {
+    hoverDebug('tabbar-leave-into-card');
+    return;
+  }
+  hoverDebug('tabbar-leave');
   const item = TreeItem.get(mLastHoverItemId);
   const itemElement = item?.$TST?.element;
   // The DOM lookup can fail transiently (row elements are rebuilt on tab
