@@ -215,6 +215,30 @@ async function onTabSubstanceEnter(event) {
   if (!substance.raw)
     return;
 
+  // While a collapsed-tree card is open, the pointer usually transits
+  // neighboring tab rows on its way into the card; replacing the card
+  // instantly for each transited row makes it impossible to reach.
+  // Defer the replacement, and cancel it if the row is left quickly.
+  if (!event.__tstDeferredReplay &&
+      mShownExtendedForTabId !== null &&
+      mShownExtendedForTabId != raw.id &&
+      !hasCustomTooltip) {
+    if (mDeferredEnter)
+      clearTimeout(mDeferredEnter.timer);
+    hoveringItemIds.add(raw.id);
+    mDeferredEnter = {
+      tabId: raw.id,
+      timer: setTimeout(() => {
+        mDeferredEnter = null;
+        if (!hoveringItemIds.has(raw.id))
+          return; // already left: it was just a transit
+        event.__tstDeferredReplay = true;
+        onTabSubstanceEnter(event);
+      }, 300),
+    };
+    return;
+  }
+
   log(`onTabSubstanceEnter(${raw.id}}) start `, { hasCustomTooltip }, timestamp);
 
   hoveringItemIds.add(raw.id);
@@ -268,11 +292,20 @@ async function onTabSubstanceEnter(event) {
   if (!substance.raw) // the tab may be destroyed while capturing tab preview
     return;
 
+  if (succeeded)
+    mShownExtendedForTabId = hasCustomTooltip ? raw.id : null;
+
   if (substance.closest('tab-item')?.parentNode &&
       succeeded)
     substance.invalidateTooltip();
 }
 onTabSubstanceEnter = EventUtils.wrapWithErrorHandler(onTabSubstanceEnter);
+
+// tab id whose collapsed-tree (extended) card is currently shown
+let mShownExtendedForTabId = null;
+// a row entered while an extended card is open: the show is deferred
+// so a quick transit toward the card does not replace/close it
+let mDeferredEnter = null;
 
 let mDelayedHideOnTabSubstanceLeaveTimer = 0;
 async function onTabSubstanceLeave(event) {
@@ -292,11 +325,23 @@ async function onTabSubstanceLeave(event) {
       mLastHoverItemId = -1;
       mDelayedHideOnTabSubstanceLeaveTimer = 0;
       if (!document.querySelector('.in-content-panel-root.tab-preview-panel.extended .in-content-panel:hover')) {
+        mShownExtendedForTabId = null;
         mController.hide({ targetItem: raw, timestamp });
       }
     }, configs.showCollapsedDescendantsMouseleaveMaxDelay);
   }
   else {
+    if (mDeferredEnter?.tabId == raw.id) {
+      // Transit across this row never showed a card: nothing to hide,
+      // and the open collapsed-tree card must survive.
+      clearTimeout(mDeferredEnter.timer);
+      mDeferredEnter = null;
+      return;
+    }
+    if (mShownExtendedForTabId !== null &&
+        mShownExtendedForTabId != raw.id)
+      return; // keep the open collapsed-tree card
+    mShownExtendedForTabId = null;
     mController.hide({ targetItem: raw, timestamp });
   }
 }
@@ -311,6 +356,11 @@ function hideOnUserAction(timestamp) {
   hoveringItemIds.clear();
   mLastHoverItemId = -1;
 
+  mShownExtendedForTabId = null;
+  if (mDeferredEnter) {
+    clearTimeout(mDeferredEnter.timer);
+    mDeferredEnter = null;
+  }
   mController.hideInSidebar({ timestamp });
 
   const activeTab = Tab.getActiveTab(TabsStore.getCurrentWindowId());
