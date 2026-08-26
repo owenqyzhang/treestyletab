@@ -343,6 +343,15 @@ export default class TabPreviewPanel extends InContentPanel {
           .in-content-panel {
             max-height: calc(100dvh - 16px);
           }
+          /* Depending on geometry the clipping element is either
+             .in-content-panel-contents (via --panel-max-height set from
+             the anchor tab position) or the inner box (via the viewport
+             clamp above); both must actually scroll. */
+          .in-content-panel-contents {
+            min-height: 0;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+          }
           .in-content-panel-contents-inner-box {
             display: flex;
             flex-direction: column;
@@ -456,27 +465,42 @@ export default class TabPreviewPanel extends InContentPanel {
 
     // Edge autoscroll for tall collapsed-tree lists: when the card is
     // clamped to the viewport and its list overflows, hovering near the
-    // list's top/bottom edge scrolls it (a timer, not rAF: Chrome
-    // throttles rAF in side panels).
-    const extendedContent = this.panel.querySelector('.in-content-panel-extended-content');
+    // card's top/bottom edge scrolls the list (a timer, not rAF: Chrome
+    // throttles rAF in side panels). Elements are re-resolved on every
+    // event: the panel contents can be rebuilt between shows.
     const EDGE_SCROLL_ZONE_PX      = 28;
     const EDGE_SCROLL_MAX_PX_TICK  = 8;
     let edgeScrollTimer = 0;
     let edgeScrollSpeed = 0;
+    let edgeScrollTarget = null;
     const stopEdgeScroll = () => {
       if (edgeScrollTimer) {
         clearInterval(edgeScrollTimer);
         edgeScrollTimer = 0;
       }
       edgeScrollSpeed = 0;
+      edgeScrollTarget = null;
     };
-    this.panel.addEventListener('pointermove', event => {
-      if (!extendedContent ||
-          extendedContent.scrollHeight <= extendedContent.clientHeight) {
+    const findScrollableContent = () => {
+      const panel = this.root.querySelector('.in-content-panel.open');
+      if (!panel)
+        return null;
+      for (const selector of ['.in-content-panel-extended-content', '.in-content-panel-contents-inner-box', '.in-content-panel-contents']) {
+        const candidate = panel.querySelector(selector);
+        if (candidate && candidate.scrollHeight > candidate.clientHeight + 1)
+          return candidate;
+      }
+      return null;
+    };
+    this.root.addEventListener('pointermove', event => {
+      const scrollable = findScrollableContent();
+      if (!scrollable) {
         stopEdgeScroll();
         return;
       }
-      const rect = extendedContent.getBoundingClientRect();
+      // Zones are measured from the CARD's edges (what the user aims at),
+      // not the inner list's.
+      const rect = scrollable.closest('.in-content-panel').getBoundingClientRect();
       let speed = 0;
       if (event.clientY < rect.top + EDGE_SCROLL_ZONE_PX) {
         const strength = Math.min(EDGE_SCROLL_ZONE_PX, (rect.top + EDGE_SCROLL_ZONE_PX) - event.clientY) / EDGE_SCROLL_ZONE_PX;
@@ -487,21 +511,22 @@ export default class TabPreviewPanel extends InContentPanel {
         speed = Math.ceil(strength * EDGE_SCROLL_MAX_PX_TICK);
       }
       edgeScrollSpeed = speed;
+      edgeScrollTarget = scrollable;
       if (speed == 0) {
         stopEdgeScroll();
       }
       else if (!edgeScrollTimer) {
         edgeScrollTimer = setInterval(() => {
           if (!edgeScrollSpeed ||
-              !extendedContent.isConnected) {
+              !edgeScrollTarget?.isConnected) {
             stopEdgeScroll();
             return;
           }
-          extendedContent.scrollTop += edgeScrollSpeed;
+          edgeScrollTarget.scrollTop += edgeScrollSpeed;
         }, 16);
       }
     });
-    this.panel.addEventListener('pointerleave', stopEdgeScroll);
+    this.root.addEventListener('pointerleave', stopEdgeScroll);
   }
 
   onUpdateUI({ targetId, title, url, contextualIdentity, tooltipHtml, hasPreview, previewURL, memoryUsageMB, complete, scale, ...params }) {
