@@ -770,21 +770,45 @@ function buildCompatBrowser(chrome) {
 // ===================================================================
 if (IS_CHROME) {
   const compatBrowser = buildCompatBrowser(NATIVE);
-  try {
-    Object.defineProperty(globalThis, 'browser', {
-      value:        compatBrowser,
-      writable:     true,
-      configurable: true,
-    });
-  }
-  catch(_error) {
+
+  // Chrome installs its own `browser` alias binding LAZILY: on a slow cold
+  // start (browser reboot with a large session) that installation can land
+  // AFTER this module evaluated and silently replace our facade with the
+  // bare `chrome` alias, which breaks every emulated API (sessions.*Value,
+  // parameter stripping, ...). Prefer a non-configurable accessor that
+  // swallows any later overwrite; when that is impossible, fall back to a
+  // plain property plus self-healing from our internal event listeners
+  // below (they are registered before any TST listener, so a clobbered
+  // global is restored before TST code can observe it).
+  const ensureCompatBrowserGlobal = () => {
+    if (globalThis.browser === compatBrowser)
+      return;
     try {
-      globalThis.browser = compatBrowser;
+      Object.defineProperty(globalThis, 'browser', {
+        get() { return compatBrowser; },
+        set(_value) { /* swallow Chrome's late alias installation */ },
+        configurable: false,
+      });
     }
-    catch(error) {
-      console.error('browser-compat: failed to install the compat browser global', error);
+    catch(_error) {
+      try {
+        globalThis.browser = compatBrowser;
+      }
+      catch(error) {
+        console.error('browser-compat: failed to install the compat browser global', error);
+      }
     }
-  }
+  };
+  ensureCompatBrowserGlobal();
+  globalThis.__treestyletabEnsureCompatBrowser = ensureCompatBrowserGlobal;
+  // Self-healing choke points: these native listeners run before all TST
+  // listeners (this module is always evaluated first).
+  NATIVE.tabs.onCreated.addListener(ensureCompatBrowserGlobal);
+  NATIVE.tabs.onActivated.addListener(ensureCompatBrowserGlobal);
+  NATIVE.tabs.onUpdated.addListener(ensureCompatBrowserGlobal);
+  NATIVE.tabs.onRemoved.addListener(ensureCompatBrowserGlobal);
+  NATIVE.runtime.onMessage.addListener(() => { ensureCompatBrowserGlobal(); });
+  NATIVE.runtime.onConnect.addListener(ensureCompatBrowserGlobal);
 
   if (IS_SERVICE_WORKER) {
     // Let Chrome itself toggle the side panel on toolbar button clicks:
@@ -804,6 +828,7 @@ if (IS_CHROME) {
     // and re-initialization is expensive, so emulate Firefox's persistent
     // background page as closely as possible.
     setInterval(() => {
+      ensureCompatBrowserGlobal();
       NATIVE.runtime.getPlatformInfo().catch(_error => {});
     }, 20 * 1000);
     if (NATIVE.alarms) {

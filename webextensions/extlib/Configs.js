@@ -295,7 +295,12 @@ class Configs {
               });
             };
 
-            for (let i = 0, maxi = 10; i < maxi; i++) {
+            // The retry loop works around a Thunderbird bug; on Chrome
+            // storage.managed.get() simply never responds when no managed
+            // policy is provided, so retrying only wastes ~5 seconds of
+            // every startup. One timed-out attempt is definitive there.
+            const maxRetryCount = (typeof chrome != 'undefined' && chrome.sidePanel) ? 1 : 10;
+            for (let i = 0, maxi = maxRetryCount; i < maxi; i++) {
               try {
                 const result = await loadManagedStorage();
                 // On old versions Firefox and Thunderbird, a value with
