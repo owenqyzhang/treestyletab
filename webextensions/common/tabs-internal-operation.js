@@ -39,6 +39,12 @@ export async function activateTab(tab, { byMouseOperation, keepMultiselection, s
     return;
   log('activateTab: ', dumpTab(tab));
   const win = TabsStore.windows.get(tab.windowId);
+  if (!win) {
+    // Window tracking can be incomplete right after a service worker
+    // restart: fall back to plain activation instead of crashing.
+    browser.tabs.update(tab.id, { active: true }).catch(ApiTabs.createErrorSuppressor());
+    return;
+  }
   win.internallyFocusingTabs.add(tab.id);
   if (byMouseOperation)
     win.internallyFocusingByMouseTabs.add(tab.id);
@@ -294,10 +300,19 @@ export async function highlightTabs(tabs, { inheritToCollapsedDescendants } = {}
 
   // for better performance, we should not call browser.tabs.update() for each tab.
   const highlightedTabIds = new Set(tabIds);
-  const activeTab = Tab.getActiveTab(windowId);
+  let activeTab = Tab.getActiveTab(windowId);
+  if (!activeTab) {
+    // The tracked active tab can be lost across service worker restarts
+    // (e.g. after the system was locked/asleep); a crash here would make
+    // every tab activation fail permanently, so repair from reality.
+    const [realActive] = await browser.tabs.query({ windowId, active: true }).catch(_error => []);
+    activeTab = (realActive && Tab.get(realActive.id)) || null;
+    if (activeTab)
+      TabsStore.activeTabInWindow.set(windowId, activeTab);
+  }
   const indices = mapAndFilter(highlightedTabIds,
-                               id => id == activeTab.id ? undefined : Tab.get(id).index);
-  if (highlightedTabIds.has(activeTab.id))
+                               id => id == activeTab?.id ? undefined : Tab.get(id)?.index);
+  if (activeTab && highlightedTabIds.has(activeTab.id))
     indices.unshift(activeTab.index);
 
   // highlight tabs progressively, because massive change at once may block updating of highlighted appearance of tabs.
