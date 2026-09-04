@@ -377,6 +377,12 @@ function buildCompatBrowser(chrome) {
       delete sanitized.populate; // Firefox-only, Chrome rejects unknown properties
       return chrome.tabs.highlight(sanitized);
     },
+    async move(tabIds, moveProperties) {
+      // Chrome returns a bare Tab when moving a single tab id; Firefox
+      // always returns an array. TST assumes an array (.map).
+      const result = await chrome.tabs.move(tabIds, moveProperties);
+      return Array.isArray(result) ? result : [result];
+    },
     async discard(tabIds) {
       // Firefox accepts an array of tab ids, Chrome only a single id.
       if (Array.isArray(tabIds))
@@ -760,6 +766,64 @@ function buildCompatBrowser(chrome) {
       enumerable: true,
       configurable: true,
     });
+  }
+
+  // ===================================================================
+  // Graft emulation directly onto native chrome namespaces.
+  // Real Chrome pre-defines a non-configurable `browser` alias for
+  // `chrome`; our facade can be installed but later reverted to that
+  // native alias. To survive that, the methods TST would otherwise call
+  // through the facade are also grafted onto the native objects, so
+  // `chrome.sessions.getWindowValue(...)`, parameter stripping and the
+  // tabs.move return shape work even when `browser === chrome`.
+  // Idempotent across service worker restarts via a marker.
+  if (!chrome.__treestyletabGrafted) {
+    try {
+      chrome.__treestyletabGrafted = true;
+
+      if (chrome.sessions) {
+        for (const method of ['setTabValue', 'getTabValue', 'removeTabValue',
+                              'setWindowValue', 'getWindowValue', 'removeWindowValue']) {
+          if (typeof chrome.sessions[method] != 'function')
+            chrome.sessions[method] = (...args) => sessionsRPC(method, ...args);
+        }
+      }
+
+      const nativeTabsCreate    = chrome.tabs.create.bind(chrome.tabs);
+      const nativeTabsUpdate    = chrome.tabs.update.bind(chrome.tabs);
+      const nativeTabsHighlight = chrome.tabs.highlight.bind(chrome.tabs);
+      const nativeTabsMove      = chrome.tabs.move.bind(chrome.tabs);
+      const nativeTabsDiscard   = chrome.tabs.discard.bind(chrome.tabs);
+
+      chrome.tabs.create = params => {
+        const { cleaned } = stripUnsupported(params, TAB_CREATE_UNSUPPORTED);
+        return nativeTabsCreate(cleaned);
+      };
+      chrome.tabs.update = (tabId, params) => {
+        if (typeof tabId == 'object' && !params) {
+          params = tabId;
+          tabId  = undefined;
+        }
+        const { cleaned } = stripUnsupported(params, TAB_UPDATE_UNSUPPORTED);
+        return tabId === undefined ? nativeTabsUpdate(cleaned) : nativeTabsUpdate(tabId, cleaned);
+      };
+      chrome.tabs.highlight = highlightInfo => {
+        const sanitized = { ...highlightInfo };
+        delete sanitized.populate;
+        return nativeTabsHighlight(sanitized);
+      };
+      chrome.tabs.move = async (tabIds, moveProperties) => {
+        const result = await nativeTabsMove(tabIds, moveProperties);
+        return Array.isArray(result) ? result : [result];
+      };
+      chrome.tabs.discard = tabIds =>
+        Array.isArray(tabIds) ?
+          Promise.all(tabIds.map(id => nativeTabsDiscard(id).catch(_error => null))) :
+          nativeTabsDiscard(tabIds);
+    }
+    catch(error) {
+      console.error('browser-compat: failed to graft emulation onto native chrome', error);
+    }
   }
 
   return compat;
