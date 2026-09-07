@@ -97,8 +97,12 @@ masked icons) and `git push --force-with-lease origin chrome-port`.
   regenerates `extlib/` from the submodules, which would discard the Chrome
   patches vendored here. `make chrome` deliberately skips that step.
 - `extlib/` is vendored on this branch (the port patches those files).
-- Static checks: `make lint` (eslint + jsonlint). Currently 0 errors,
-  30 style warnings.
+- Static checks: `make lint` (eslint + jsonlint), currently clean. It runs
+  eslint with `--max-warnings=0`, so **warnings fail the build** — nearly every
+  rule here is configured as `warn` rather than `error`, and without that flag
+  lint exits 0 no matter how many are reported. `make chrome` depends on
+  `lint`, so a style regression blocks the package too. `make format` applies
+  the auto-fixable ones.
 - Masked icons: `make inline_masks` (or `node tools/inline-mask-images.mjs`).
   Idempotent; prints `total: 0` when everything is already inlined. Re-run
   after adding or changing any masked icon.
