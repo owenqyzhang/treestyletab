@@ -1599,7 +1599,7 @@ async function writeToClipboardWithoutClipboardAPI(windowId, { plainText, richTe
     return;
   await browser.scripting.executeScript({
     target: { tabId: activeTab.id },
-    func: async (plainText, richText) => {
+    func:   async (plainText, richText) => {
       try {
         if (typeof ClipboardItem == 'function' &&
             typeof navigator.clipboard?.write == 'function') {

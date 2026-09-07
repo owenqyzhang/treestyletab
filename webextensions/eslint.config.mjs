@@ -72,6 +72,18 @@ const rules = {
 
   'no-underscore-dangle': ['warn', {
     allowAfterThis: true,
+    // Chrome port: markers deliberately stamped onto objects TST does not own
+    // (the native `chrome` namespace, `globalThis`, DOM events). The `__`
+    // prefix is the collision-avoidance convention there, so renaming these
+    // would make a clash with the host more likely, not less.
+    allow:          [
+      '__treestyletabGrafted',
+      '__treestyletabEnsureCompatBrowser',
+      '__treestyletabCompatGetSuccessor',
+      '__treestyletabCompatDispatchTabUpdated',
+      '__treestyletabCrossContextMessaging',
+      '__tstDwellReplay',
+    ],
   }],
 
   quotes: ['warn', 'single', {

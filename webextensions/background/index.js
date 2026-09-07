@@ -33,7 +33,7 @@ import './sync-background.js';
 // dynamic import() is disallowed in the MV3 service worker, and this
 // module must only load in the background. Read at init() time, so
 // assigning after the imports is safe.
-globalThis.__treestyletabCrossContextMessaging = CrossContextMessaging; // eslint-disable-line no-underscore-dangle
+globalThis.__treestyletabCrossContextMessaging = CrossContextMessaging;
 
 log.context = 'BG';
 
