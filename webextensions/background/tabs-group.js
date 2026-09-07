@@ -478,10 +478,10 @@ export async function clearTemporaryState(tab) {
       type: 'treestyletab:clear-temporary-state',
     }).catch(ApiTabs.createErrorHandler()),
     browser.scripting.executeScript({ // failsafe
-      target: { tabId: tab.id },
+      target:            { tabId: tab.id },
       injectImmediately: true,
-      func: href => history.replaceState({}, document.title, href), // eslint-disable-line no-restricted-globals
-      args: [url.href],
+      func:              href => history.replaceState({}, document.title, href), // eslint-disable-line no-restricted-globals
+      args:              [url.href],
     }).catch(_error => {}), // Chrome disallows scripting into extension pages: rely on the messaging above.
   ]);
   tab.url = url.href;
@@ -568,10 +568,10 @@ Tab.onPinned.addListener(async tab => {
         url:  url.href,
       }).catch(ApiTabs.createErrorHandler()),
       browser.scripting.executeScript({ // failsafe
-        target: { tabId: tab.id },
+        target:            { tabId: tab.id },
         injectImmediately: true,
-        func: href => history.replaceState({}, document.title, href), // eslint-disable-line no-restricted-globals
-        args: [url.href],
+        func:              href => history.replaceState({}, document.title, href), // eslint-disable-line no-restricted-globals
+        args:              [url.href],
       }).catch(_error => {}), // Chrome disallows scripting into extension pages: rely on the messaging above.
     ]);
     await CrossContextMessaging.sendMessage(tab.id, {

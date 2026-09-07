@@ -3,4 +3,7 @@ treestyletab-chrome.zip
 extlib/
 
 # node.js dependency
-node_modules/
+# No trailing slash: that form matches directories only, so a node_modules
+# symlink (handy when sharing one install across git worktrees) stays visible
+# to git and can be committed by accident.
+node_modules

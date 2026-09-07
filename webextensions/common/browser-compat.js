@@ -99,11 +99,13 @@ function promiseReturningListener(listener) {
     if (result && typeof result.then == 'function') {
       result.then(
         response => {
-          try { sendResponse(response); } catch(_error) { /* channel already closed */ }
+          try { sendResponse(response); }
+          catch(_error) { /* channel already closed */ }
         },
         error => {
           console.error('browser-compat: async onMessage listener failed', error);
-          try { sendResponse(undefined); } catch(_error) { /* channel already closed */ }
+          try { sendResponse(undefined); }
+          catch(_error) { /* channel already closed */ }
         }
       );
       return true;
@@ -583,11 +585,11 @@ function buildCompatBrowser(chrome) {
 
   // ----- contextualIdentities ---------------------------------------
   compat.contextualIdentities = {
-    query:  async (_details) => [],
-    get:    async (_cookieStoreId) => null,
-    create: async (_details) => { throw new Error('contextualIdentities is not available on Chrome'); },
-    remove: async (_cookieStoreId) => { throw new Error('contextualIdentities is not available on Chrome'); },
-    update: async (_cookieStoreId, _details) => { throw new Error('contextualIdentities is not available on Chrome'); },
+    query:     async (_details) => [],
+    get:       async (_cookieStoreId) => null,
+    create:    async (_details) => { throw new Error('contextualIdentities is not available on Chrome'); },
+    remove:    async (_cookieStoreId) => { throw new Error('contextualIdentities is not available on Chrome'); },
+    update:    async (_cookieStoreId, _details) => { throw new Error('contextualIdentities is not available on Chrome'); },
     onCreated: inertEvent(),
     onRemoved: inertEvent(),
     onUpdated: inertEvent(),
@@ -697,9 +699,9 @@ function buildCompatBrowser(chrome) {
       return { sanitized: permissions, hadFirefoxOnly: false };
     const filtered = permissions.permissions.filter(permission => !FIREFOX_ONLY_PERMISSIONS.has(permission));
     return {
-      sanitized: { ...permissions, permissions: filtered },
+      sanitized:      { ...permissions, permissions: filtered },
       hadFirefoxOnly: filtered.length != permissions.permissions.length,
-      onlyFirefox: filtered.length == 0 && (!permissions.origins || permissions.origins.length == 0),
+      onlyFirefox:    filtered.length == 0 && (!permissions.origins || permissions.origins.length == 0),
     };
   }
   compat.permissions = facade(() => chrome.permissions, {
@@ -742,7 +744,7 @@ function buildCompatBrowser(chrome) {
         });
       return bookmarksFacade;
     },
-    enumerable: true,
+    enumerable:   true,
     configurable: true,
   });
 
@@ -762,8 +764,8 @@ function buildCompatBrowser(chrome) {
     'tabGroups',
   ]) {
     Object.defineProperty(compat, name, {
-      get: () => chrome[name],
-      enumerable: true,
+      get:          () => chrome[name],
+      enumerable:   true,
       configurable: true,
     });
   }
@@ -782,8 +784,14 @@ function buildCompatBrowser(chrome) {
       chrome.__treestyletabGrafted = true;
 
       if (chrome.sessions) {
-        for (const method of ['setTabValue', 'getTabValue', 'removeTabValue',
-                              'setWindowValue', 'getWindowValue', 'removeWindowValue']) {
+        for (const method of [
+          'setTabValue',
+          'getTabValue',
+          'removeTabValue',
+          'setWindowValue',
+          'getWindowValue',
+          'removeWindowValue',
+        ]) {
           if (typeof chrome.sessions[method] != 'function')
             chrome.sessions[method] = (...args) => sessionsRPC(method, ...args);
         }

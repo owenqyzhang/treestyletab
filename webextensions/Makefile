@@ -14,8 +14,12 @@ all: xpi
 install_dependency:
 	[ -e "$(NPM_BIN_DIR)/eslint" -a -e "$(NPM_BIN_DIR)/jsonlint"  -a -e "$(NPM_BIN_DIR)/knip" ] || npm install --save-dev
 
+# --max-warnings=0 treats every warning as an error, so `lint` (and therefore
+# `make chrome`, which depends on it) fails on any new style regression. Most
+# of this project's rules are configured as warnings rather than errors, so
+# without this the exit status stays 0 no matter how many are reported.
 lint: install_dependency
-	"$(NPM_BIN_DIR)/eslint" . --report-unused-disable-directives
+	"$(NPM_BIN_DIR)/eslint" . --report-unused-disable-directives --max-warnings=0
 	find . -type d -name node_modules -prune -o -type f -name '*.json' -print | xargs "$(NPM_BIN_DIR)/jsonlint" --quiet
 
 format: install_dependency
