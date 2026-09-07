@@ -4,7 +4,10 @@ NPM_BIN_DIR := $(NPM_MOD_DIR)/.bin
 EXTERNAL_LIB_DIR := $(CURDIR)/extlib
 TOOLS_DIR := $(CURDIR)/tools
 
-.PHONY: xpi install_dependency lint format knip init_extlib update_extlib install_extlib fix_locale_errors
+CHROME_ZIP := treestyletab-chrome.zip
+CHROME_PACKAGE_FILES := manifest.json _locales background common options sidebar resources extlib tests
+
+.PHONY: xpi chrome inline_masks install_dependency lint format knip init_extlib update_extlib install_extlib fix_locale_errors
 
 all: xpi
 
@@ -22,9 +25,26 @@ format: install_dependency
 knip: install_dependency
 	"$(NPM_BIN_DIR)/knip"
 
+# NOTE (chrome-port branch): `xpi` rebuilds extlib/ via install_extlib, but on
+# this branch extlib/ is vendored and patched for Chrome. Run `make chrome`
+# instead; use `xpi` only when deliberately regenerating the Firefox package.
 xpi: init_extlib install_extlib lint
 	rm -f ./*.xpi
 	zip -r -9 treestyletab-we.xpi manifest.json _locales common options background sidebar resources extlib tests -x '*/.*' >/dev/null 2>/dev/null
+
+# Chrome (MV3) package. Deliberately does NOT depend on init_extlib/
+# install_extlib: extlib/ is vendored and patched on this branch, so
+# regenerating it would discard the port's patches.
+chrome: inline_masks lint
+	rm -f ./$(CHROME_ZIP)
+	zip -r -9 $(CHROME_ZIP) $(CHROME_PACKAGE_FILES) -x '*/.*' >/dev/null
+	@echo "built ./$(CHROME_ZIP)"
+
+# Chrome fetches CSS mask images in CORS mode, which chrome-extension:// does
+# not satisfy, so masked icons must be inlined as data: URIs. Idempotent:
+# prints "total: 0" when everything is already inlined.
+inline_masks:
+	node $(TOOLS_DIR)/inline-mask-images.mjs
 
 init_extlib:
 	git submodule update --init
@@ -64,7 +84,10 @@ install_extlib: install_dependency
 	echo "/* codemirror-colorpicker version $$(cat node_modules/codemirror-colorpicker/package.json | jq -r .version) */" > $(EXTERNAL_LIB_DIR)/codemirror-colorpicker.js
 	cp $(EXTERNAL_LIB_DIR)/codemirror-colorpicker.js $(EXTERNAL_LIB_DIR)/codemirror-colorpicker.css
 	cat node_modules/codemirror-colorpicker/dist/codemirror-colorpicker.js >> $(EXTERNAL_LIB_DIR)/codemirror-colorpicker.js
-	sed -i -e "s/(this, (function () { 'use strict';/(this || self, (function () { 'use strict';/" $(EXTERNAL_LIB_DIR)/codemirror-colorpicker.js
+# Not `sed -i -e`: BSD/macOS sed reads the next argument as -i's backup
+# suffix, silently leaving a stray codemirror-colorpicker.js-e behind.
+	sed -e "s/(this, (function () { 'use strict';/(this || self, (function () { 'use strict';/" $(EXTERNAL_LIB_DIR)/codemirror-colorpicker.js > $(EXTERNAL_LIB_DIR)/codemirror-colorpicker.js.tmp
+	mv $(EXTERNAL_LIB_DIR)/codemirror-colorpicker.js.tmp $(EXTERNAL_LIB_DIR)/codemirror-colorpicker.js
 	echo 'window["codemirror-picker"] = self["codemirror-picker"];' >> $(EXTERNAL_LIB_DIR)/codemirror-colorpicker.js
 	cat node_modules/codemirror-colorpicker/dist/codemirror-colorpicker.css >> $(EXTERNAL_LIB_DIR)/codemirror-colorpicker.css
 	cp node_modules/dompurify/dist/purify.es.mjs* $(EXTERNAL_LIB_DIR)/

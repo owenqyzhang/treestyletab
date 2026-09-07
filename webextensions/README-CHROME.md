@@ -86,8 +86,27 @@ masked icons) and `git push --force-with-lease origin chrome-port`.
 
 ## Development
 
+- Toolchain: Node.js >= 20 (`brew install node`), then `npm install --save-dev`
+  in this directory. Everything else the build needs (`zip`, `jq`) ships with
+  macOS / Homebrew.
+- Build the Chrome package: **`make chrome`** → `treestyletab-chrome.zip`.
+  It runs `inline_masks` then `lint`, and packages only the runtime
+  directories. Load unpacked from `webextensions/` for development; the zip is
+  for distribution.
+- **Do not run `make xpi` (or `make install_extlib`) on this branch.** `xpi`
+  regenerates `extlib/` from the submodules, which would discard the Chrome
+  patches vendored here. `make chrome` deliberately skips that step.
 - `extlib/` is vendored on this branch (the port patches those files).
-- Static checks: `make lint` (eslint + jsonlint).
+- Static checks: `make lint` (eslint + jsonlint). Currently 0 errors,
+  30 style warnings.
+- Masked icons: `make inline_masks` (or `node tools/inline-mask-images.mjs`).
+  Idempotent; prints `total: 0` when everything is already inlined. Re-run
+  after adding or changing any masked icon.
 - Smoke/functional tests used during the port drive Chrome for Testing via
   puppeteer (`installExtension` + `--enable-unsafe-extension-debugging`,
-  launched with `ignoreDefaultArgs: ['--disable-extensions']`).
+  launched with `ignoreDefaultArgs: ['--disable-extensions']`). On a machine
+  with no Chrome, any Chromium browser works as the target via
+  `puppeteer-core` + `executablePath` (Vivaldi has been used successfully).
+  Note that Chrome for Testing does *not* pre-define the `browser` global, so
+  it cannot reproduce the class of bug fixed in `browser-compat.js`; a real
+  Chrome/Chromium build is required for that.
