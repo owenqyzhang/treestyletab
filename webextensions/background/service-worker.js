@@ -10,4 +10,5 @@
 'use strict';
 
 import '/common/browser-compat.js';
+import '/common/crash-recorder.js'; // self-initializes on import
 import './index.js';

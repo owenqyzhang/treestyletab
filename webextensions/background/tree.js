@@ -103,6 +103,8 @@ export async function attachTabTo(child, parent, options = {}) {
     return false;
   }
 
+  globalThis.__treestyletabBreadcrumb?.('attach', `child ${child.id} -> parent ${parent.id} insertAt ${options.insertAt} before ${options.insertBefore?.id ?? '-'} after ${options.insertAfter?.id ?? '-'}`); // eslint-disable-line no-underscore-dangle
+
   log('attachTabTo: ', {
     child:                     child.id,
     parent:                    parent.id,
@@ -570,6 +572,7 @@ export function getReferenceTabsForNewNextSibling(base) {
 export function detachTab(child, options = {}) {
   log('detachTab: ', child.id, options,
       { stack: `${stack()}\n${options.stack && stack(options.stack) || ''}` });
+  globalThis.__treestyletabBreadcrumb?.('detach', `child ${child?.id} from parent ${(TabsStore.ensureLivingItem(options.parent) || child?.$TST?.parent)?.id ?? '-'}`); // eslint-disable-line no-underscore-dangle
   // the "parent" option is used for removing child.
   const parent = TabsStore.ensureLivingItem(options.parent) || child.$TST.parent;
 
