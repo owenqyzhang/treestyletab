@@ -362,8 +362,11 @@ const CrossContextMessagingBG = (() => {
   }
 
   browser.tabs.onUpdated.addListener(async (tabId, info) => {
-    const tab = await browser.tabs.get(tabId);
-    if (!info.url || tab.url.startsWith('about:blank')) return;
+    if (!info.url) return;
+    // The tab can be removed between the event and this async get; a
+    // rejected get here would surface as an unhandled rejection.
+    const tab = await browser.tabs.get(tabId).catch(() => null);
+    if (!tab || tab.url.startsWith('about:blank')) return;
     handleIncomingHash(tabId, info.url);
   });
 
