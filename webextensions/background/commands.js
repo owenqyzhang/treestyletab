@@ -603,6 +603,7 @@ async function performTreeItemsDragDropWithMessage(message) {
     message.insertAfter?.type == TreeItem.TYPE_TAB && message.insertAfter.id,
   ]));
   log('perform tabs dragdrop requested: ', message);
+  globalThis.__treestyletabBreadcrumb?.('dragdrop', `dragged ${draggedTabIds.join(',')} droppedOn ${message.droppedOn?.id ?? '-'} attachTo ${message.attachToId ?? '-'} before ${message.insertBefore?.id ?? '-'} after ${message.insertAfter?.id ?? '-'} action ${message.action}`); // eslint-disable-line no-underscore-dangle
   return performTreeItemsDragDrop({
     ...message,
     items:         message.import ? message.items : message.items.map(TreeItem.get),
