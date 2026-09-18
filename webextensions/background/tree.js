@@ -1809,7 +1809,10 @@ export async function openNewWindowFromTabs(tabs, options = {}) {
     .then(async win => {
       const movedTabIds = new Set(movedTabs.map(tab => tab.id));
       log('moved tabs: ', movedTabIds);
-      if (movedTabIds.has(activeTab.id)) {
+      // activeTab is undefined when none of the dragged/moved tabs was the
+      // active one; guard so this cleanup does not throw and abort halfway
+      // (which would leave stray tabs in the new window).
+      if (activeTab && movedTabIds.has(activeTab.id)) {
         await TabsInternalOperation.activateTab(activeTab);
       }
       const removeTabs = mapAndFilter(win.tabs, tab =>
