@@ -1240,8 +1240,11 @@ function onDragOver(event) {
   if (!mReadyToPinDraggedTabsTimer &&
       !document.documentElement.classList.contains(Constants.kTABBAR_STATE_READY_TO_PIN_DRAGGED_TABS) &&
       !event.target.closest('#pinned-tabs-container') &&
-      mShouldShowPinnedTabsDropArea &&
-      !Tab.getLastPinnedTab(TabsStore.getCurrentWindowId())) {
+      mShouldShowPinnedTabsDropArea) {
+    // Note: previously gated on `!Tab.getLastPinnedTab(...)`, which armed
+    // the drag-to-pin drop area only while there were zero pinned tabs —
+    // so the gesture worked exactly once. Allow it to re-arm regardless
+    // of existing pinned tabs.
     log('onDragOver: ready to pin dragged tabs');
     mReadyToPinDraggedTabsTimer = setTimeout(() => {
       if (mShouldShowPinnedTabsDropArea) {
