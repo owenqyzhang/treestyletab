@@ -1391,9 +1391,14 @@ export async function collapseExpandTreesIntelligentlyFor(tab, options = {}) {
 
 export async function fixupSubtreeCollapsedState(tab, options = {}) {
   let fixed = false;
-  if (!tab.$TST.hasChild)
+  // During restructuring, a stale/untracked tab (or one whose $TST was
+  // torn down) can reach here; skip it instead of aborting the whole
+  // fixup pass, which would leave the tree half-applied.
+  if (!tab?.$TST?.hasChild)
     return fixed;
   const firstChild = tab.$TST.firstChild;
+  if (!firstChild?.$TST)
+    return fixed;
   const childrenCollapsed = firstChild.$TST.collapsed;
   const collapsedStateMismatched = tab.$TST.subtreeCollapsed != childrenCollapsed;
   const nextIsFirstChild = tab.$TST.nextTab == firstChild;

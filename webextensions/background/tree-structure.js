@@ -219,14 +219,18 @@ async function reserveToAttachTabFromRestoredInfo(tab, options = {}) {
         return false;
       })
     ));
-    const restoredInfoById = new Map(restoredInfos.map(info => [info.tab.id, info]));
+    // collectRestoredTabInfo may resolve to false (its catch) or to an
+    // entry whose tab has since been untracked; drop those so the map and
+    // the apply loop below never dereference null.
+    const restoredInfoById = new Map(
+      restoredInfos.filter(info => info && info.tab).map(info => [info.tab.id, info]));
     // Phase 2: apply tree structure sequentially
     // Wrap in TreeTransaction to batch all kCOMMAND_APPLY_TREE_TRANSACTION
     // messages into a single sidebar message.
     const attachedResults = [];
     await TreeTransaction.run(async () => {
       for (const info of restoredInfos) {
-        if (info.done)
+        if (!info || !info.tab || info.done)
           continue;
         try {
           attachedResults.push(info ? await applyRestoredTabInfo(info, restoredInfoById) : false);
@@ -624,7 +628,13 @@ async function tryRestoreClosedSetFor(tab, countToBeRestored) {
   if (!configs.undoMultipleTabsClose)
     return;
 
-  const alreadRestoredIndex = lastRecentlyClosedTabs.findIndex(info => info.uniqueId == tab.$TST.uniqueId.id && info.windowId == tab.windowId);
+  // The anchor tab can be untracked by the time this runs (its $TST torn
+  // down during concurrent restructuring); without its unique id there is
+  // nothing to match against.
+  if (!tab?.$TST?.uniqueId)
+    return;
+
+  const alreadRestoredIndex = lastRecentlyClosedTabs.findIndex(info => info?.uniqueId == tab.$TST.uniqueId.id && info?.windowId == tab.windowId);
   log('tryRestoreClosedSetFor ', tab, lastRecentlyClosedTabs, lastRecentlyClosedTabsTreeStructure);
   if (alreadRestoredIndex < 0) {
     log(' => not a member of restorable tab set.');

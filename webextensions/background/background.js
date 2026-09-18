@@ -645,7 +645,8 @@ export async function confirmToCloseTabs(tabs, {
   }
 }
 Commands.onTabsClosing.addListener((tabIds, options = {}) => {
-  return confirmToCloseTabs(tabIds.map(Tab.get), options);
+  // Drop ids that no longer resolve to a living tab (removed concurrently).
+  return confirmToCloseTabs(tabIds.map(Tab.get).filter(tab => tab), options);
 });
 
 function reserveToClearGrantedRemovingTabs() {

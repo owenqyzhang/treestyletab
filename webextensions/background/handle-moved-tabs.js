@@ -223,7 +223,8 @@ function reserveToEnsureRootTabVisible(tab) {
     const tabs = Array.from(reserveToEnsureRootTabVisible.tabIds, Tab.get);
     reserveToEnsureRootTabVisible.tabIds.clear();
     for (const tab of tabs) {
-      if (!tab.$TST ||
+      // Tab.get returns undefined for a tab removed during the delay above.
+      if (!tab?.$TST ||
           tab.$TST.parent ||
           !tab.$TST.collapsed)
         continue;
