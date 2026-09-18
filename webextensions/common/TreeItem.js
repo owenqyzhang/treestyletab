@@ -2061,11 +2061,23 @@ export class Tab extends TreeItem {
     this.cachedAncestorIds = [];
     if (!this.raw)
       return ancestors;
+    const seen = new Set([this.raw.id]);
     let descendant = this.raw;
     while (true) {
       const parent = Tab.get(descendant.$TST.parentId);
       if (!parent)
         break;
+      if (seen.has(parent.id)) {
+        // Defensive: a cycle in the parent chain (corrupted tree) would
+        // otherwise loop forever here and hang the service worker, making
+        // every operation that reads ancestors — including drag/drop —
+        // never complete. Stop the walk (do not mutate state from inside
+        // this read path); the surfaced error identifies the bad tab.
+        console.error(`TST: cycle detected in tree ancestors at tab ${parent.id}`);
+        globalThis.__treestyletabBreadcrumb?.('cycle', `ancestor cycle at tab ${parent.id}`); // eslint-disable-line no-underscore-dangle
+        break;
+      }
+      seen.add(parent.id);
       ancestors.push(parent);
       this.cachedAncestorIds.push(parent.id);
       descendant = parent;
