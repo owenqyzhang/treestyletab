@@ -1704,7 +1704,16 @@ async function onDragEnd(event) {
   const lastDragEventCoordinatesX = mLastDragEventCoordinates.x;
   const lastDragEventCoordinatesY = mLastDragEventCoordinates.y;
   const lastDragEventCoordinatesTimestamp = mLastDragEventCoordinates.timestamp;
-  const droppedOnSidebarArea = !!configs.lastDragOverSidebarOwnerWindowId;
+  // `lastDragOverSidebarOwnerWindowId` is set through a throttled, async,
+  // storage-backed path that can lag behind a quick drop, and the
+  // coordinate fallback below relies on window.screenX/outerWidth math
+  // that is meaningless for an embedded Chrome side panel — both make an
+  // in-sidebar drop look like it landed outside, tearing the tab off into
+  // a new window. `mDraggingOnSelfWindow` is a synchronous local signal
+  // that stays true while the drag is over this window's sidebar and is
+  // cleared only when it actually leaves the tab bar, so it reliably
+  // distinguishes an in-sidebar drop from an intentional tear-off.
+  const droppedOnSidebarArea = !!configs.lastDragOverSidebarOwnerWindowId || mDraggingOnSelfWindow;
 
   const dragData = getDragData(event.dataTransfer);
   if (dragData) {
