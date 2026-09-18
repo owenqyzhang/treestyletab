@@ -377,18 +377,20 @@ function getDropAction(event) {
           if (configs.moveSoloTabOnDropParentToDescendant)
             return true;
           const ancestors = info.dragOverItem.$TST.ancestors;
-          /* too many function call in this way, so I use alternative way for better performance.
-          return !info.draggedItemIds.includes(info.dragOverItem.id) &&
-                   Tab.collectRootTabs(info.draggedItems).every(rootTab =>
-                     !ancestors.includes(rootTab)
-                   );
-          */
-          for (const item of info.draggedItems.slice(0).reverse()) {
-            const parent = item.$TST.parent;
-            if (!parent && ancestors.includes(parent)) {
-              log('canDrop:undroppable: on descendant');
-              return false;
-            }
+          // A tree can never be dropped onto one of its own members or a
+          // descendant of itself; doing so creates a cycle and corrupts
+          // the tree. The former "optimized" loop here was dead code
+          // (`ancestors.includes(null)` is always false), so such drops
+          // were wrongly permitted — the source of the mangled tree
+          // structures. Use the correct check (the commented reference
+          // implementation this loop was meant to replace).
+          if (info.draggedItemIds.includes(info.dragOverItem.id)) {
+            log('canDrop:undroppable: on a dragged item');
+            return false;
+          }
+          if (Tab.collectRootTabs(info.draggedItems).some(rootTab => ancestors.includes(rootTab))) {
+            log('canDrop:undroppable: on descendant');
+            return false;
           }
           return true;
         }
