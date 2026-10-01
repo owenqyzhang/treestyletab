@@ -1698,7 +1698,16 @@ function sanitizeDraggedItems({ draggedItems, structure, insertBefore, insertAft
   return { draggedItems, structure, insertBefore, insertAfter };
 }
 
+// Work triggered by a finished drag (a drop, a tear-off) is sent a while
+// after the dragging state is cleared; see sidebar.js reloadWhenNotDragging().
+let mLastDragFinishedAt = 0;
+
+export function getLastDragFinishedAt() {
+  return mLastDragFinishedAt;
+}
+
 async function onDragEnd(event) {
+  mLastDragFinishedAt = Date.now();
   log('onDragEnd, ', { event, mDraggingOnSelfWindow, mDraggingOnDraggedItems, dropEffect: event.dataTransfer?.dropEffect });
   if (!mLastDragEventCoordinates) {
     log('dragend is handled after finishDrag - already handled by ondrop handler.');
@@ -1881,6 +1890,7 @@ async function onDragEnd(event) {
 onDragEnd = EventUtils.wrapWithErrorHandler(onDragEnd);
 
 function finishDrag(trigger) {
+  mLastDragFinishedAt = Date.now();
   log(`finishDrag from ${trigger || 'unknown'}`);
 
   window.removeEventListener('keydown', onKeyDownWhileDragging, { capture: true });

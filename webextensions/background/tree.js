@@ -88,6 +88,12 @@ function isTabIdUnattachable(id) {
   return mUnattachableTabIds.has(id);
 }
 
+// See Tab.replaceId().
+export function replaceUnattachableTabId(oldId, newId) {
+  if (mUnattachableTabIds.delete(oldId))
+    mUnattachableTabIds.add(newId);
+}
+
 
 // return moved (or not)
 export async function attachTabTo(child, parent, options = {}) {
@@ -2319,8 +2325,9 @@ SidebarConnection.onMessage.addListener(async (windowId, message) => {
     case Constants.kCOMMAND_NEW_WINDOW_FROM_TABS: {
       log('new window requested: ', message);
       await Tab.waitUntilTracked(message.tabIds);
-      const tabs = message.tabIds.map(id => TabsStore.tabs.get(id));
-      openNewWindowFromTabs(tabs, message);
+      const tabs = message.tabIds.map(id => TabsStore.tabs.get(id)).filter(tab => !!tab);
+      if (tabs.length > 0)
+        openNewWindowFromTabs(tabs, message);
     }; break;
   }
 });

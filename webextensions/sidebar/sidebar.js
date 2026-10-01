@@ -131,6 +131,64 @@ document.documentElement.classList.toggle('rtl', isRTL());
 applyAnimationState(shouldApplyAnimation());
 UserOperationBlocker.block({ throbber: true });
 
+// onMessage() is registered only after the imported tree is rendered; a
+// reload requested before that (e.g. the background rebuilt its tree again
+// while this page was loading) would be lost and leave this page stale.
+const mReloadRequestsWhileInitializing = [];
+function onMessageWhileInitializing(message) {
+  if (message?.type == Constants.kCOMMAND_RELOAD)
+    mReloadRequestsWhileInitializing.push(message);
+}
+browser.runtime.onMessage.addListener(onMessageWhileInitializing);
+
+// The background's store generation of the tree this page imported (see
+// TabsStore.getStoreGeneration()): reload requests for that tree or an older
+// one are stale, e.g. a reload sent while this page was already importing the
+// rebuilt tree.
+let mImportedGeneration = null;
+
+function isStaleReloadRequest(message) {
+  return message.generation != null &&
+    mImportedGeneration != null &&
+    message.generation <= mImportedGeneration;
+}
+
+// Reloading the page in the middle of a drag would silently abort it; the
+// background may request reloads at any time (e.g. when Chrome replaced a tab
+// id). A drop also finishes some time after the dragging state is cleared
+// (tear-offs wait 250 ms, messages to the background are batched), so wait
+// until no drag has been seen for a while, but not forever.
+const RELOAD_DRAG_SETTLE_DELAY = 1000;
+const RELOAD_MAX_DEFERRAL = 30 * 1000;
+let mReloadScheduled = false;
+
+function isDraggingInSidebar() {
+  return Tab.getDraggingTabs(mTargetWindow).length > 0 ||
+    document.documentElement.classList.contains(Constants.kTABBAR_STATE_TAB_DRAGGING) ||
+    Date.now() - DragAndDrop.getLastDragFinishedAt() < RELOAD_DRAG_SETTLE_DELAY;
+}
+
+function reloadWhenNotDragging() {
+  if (mReloadScheduled)
+    return;
+  mReloadScheduled = true;
+  const startedAt = Date.now();
+  let lastDraggingAt = 0;
+  const tryReload = () => {
+    const now = Date.now();
+    if (isDraggingInSidebar())
+      lastDraggingAt = now;
+    if (lastDraggingAt > 0 &&
+        now - lastDraggingAt < RELOAD_DRAG_SETTLE_DELAY &&
+        now - startedAt < RELOAD_MAX_DEFERRAL) {
+      setTimeout(tryReload, 250);
+      return;
+    }
+    window.location.reload();
+  };
+  tryReload();
+}
+
 async function setBrowserWindowSizes(win) {
   if (!win)
     win = await browser.windows.get(mTargetWindow);
@@ -282,6 +340,11 @@ export async function init() {
       });
 
       browser.runtime.onMessage.addListener(onMessage);
+      browser.runtime.onMessage.removeListener(onMessageWhileInitializing);
+      if (mReloadRequestsWhileInitializing.some(message => (!message.windowId || message.windowId == mTargetWindow) && !isStaleReloadRequest(message))) {
+        log('reload requested while initializing');
+        reloadWhenNotDragging();
+      }
 
       onBuilt.dispatch();
 
@@ -337,7 +400,14 @@ export async function init() {
   // Failsafe. If the sync operation fail after retryings,
   // SidebarItems.onSyncFailed is notified then this sidebar page will be
   // reloaded for complete retry.
-  SidebarItems.onSyncFailed.addListener(rebuildAll);
+  SidebarItems.onSyncFailed.addListener(() => {
+    // A pending reload re-imports everything anyway; rebuilding in place
+    // loses the tree data of tab ids this page has not seen yet (e.g. ids
+    // Chrome replaced while the reload waits for a drag to end).
+    if (mReloadScheduled)
+      return;
+    rebuildAll();
+  });
   SidebarItems.reserveToSyncTabsOrder();
 
   Size.onUpdated.addListener(updateTabbarLayout.bind(null, {
@@ -602,6 +672,7 @@ async function rebuildAll(importedWindow) {
       type:     Constants.kCOMMAND_PING_TO_BACKGROUND,
       windowId: mTargetWindow
     }).catch(ApiTabs.createErrorHandler()));
+  mImportedGeneration = importedWindow?.generation ?? null;
 
   // Ignore tabs already closed. It can happen when the first tab is
   // immediately reopened by other addons like Temporary Container.
@@ -1188,8 +1259,12 @@ function onMessage(message, _sender, _respond) {
       return Promise.resolve(true);
 
     case Constants.kCOMMAND_RELOAD:
+      if (isStaleReloadRequest(message)) {
+        log('ignore reload command for an already imported tree: ', message.generation, mImportedGeneration);
+        return;
+      }
       log('reload triggered by the reload command');
-      window.location.reload();
+      reloadWhenNotDragging();
       return;
 
     case Constants.kCOMMAND_SHOW_DIALOG:

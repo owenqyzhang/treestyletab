@@ -181,9 +181,17 @@ async function syncTabsOrder() {
     if (reserveToSyncTabsOrder.retryCount > 10) {
       console.error(new Error(`Fatal error: native tabs are not same to the tabs tracked by the background process, for the window ${windowId}. Reloading all...`));
       reserveToSyncTabsOrder.retryCount = 0;
+      const internalIds = new Set(internalOrder);
+      const nativeIds   = new Set(nativeOrder);
       browser.runtime.sendMessage({
-        type: Constants.kCOMMAND_RELOAD,
-        all:  true
+        type:    Constants.kCOMMAND_RELOAD,
+        all:     true,
+        // Other sidebars receive this too and would reload right away, while
+        // the background is still rebuilding; the background reloads them
+        // when it is done.
+        windowId,
+        reason:  `sidebar of window ${windowId}: native tabs differ from tracked tabs`,
+        details: `only native: ${nativeOrder.filter(id => !internalIds.has(id)).join(',') || '-'}; only tracked: ${internalOrder.filter(id => !nativeIds.has(id)).join(',') || '-'}`,
       }).catch(ApiTabs.createErrorSuppressor());
       return;
     }

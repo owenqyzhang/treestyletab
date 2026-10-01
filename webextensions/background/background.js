@@ -72,7 +72,15 @@ const mDarkModeMatchMedia = typeof window != 'undefined' ?
   null; // the service worker case is handled with getDarkModeMediaQuery() instead
 
 let mInitialized = false;
+let mInitializedResolver;
+const mPromisedInitialized = new Promise(resolve => {
+  mInitializedResolver = resolve;
+});
 const mPreloadedCaches = new Map();
+
+function breadcrumb(label, detail) {
+  globalThis.__treestyletabBreadcrumb?.(label, detail); // eslint-disable-line no-underscore-dangle
+}
 
 async function getAllWindows() {
   const [windows, tabGroups] = await Promise.all([
@@ -104,6 +112,9 @@ async function getAllWindows() {
 
 log('init: Start queuing of messages notified via WE APIs');
 ApiTabsListener.init();
+// Must be registered synchronously so that the event wakes the worker up.
+if (IS_CHROME && browser.tabs.onReplaced)
+  browser.tabs.onReplaced.addListener(onTabReplaced);
 const promisedRestored = UniqueId.ensurePersistentIdRestored(tab => { // this must be called synchronously
   // Read caches from restored tabs while waiting, for better performance.
   browser.sessions.getWindowValue(tab.windowId, Constants.kWINDOW_STATE_CACHED_TABS)
@@ -162,6 +173,7 @@ export async function init() {
   const restoredFromCache = await MetricsData.addAsync('init: rebuildAll', rebuildAll(windows));  // request() consumes internal Map
   mPreloadedCaches.clear();
   await MetricsData.addAsync('init: TreeStructure.loadTreeStructure', TreeStructure.loadTreeStructure(windows, restoredFromCache));
+  TabsStore.bumpStoreGeneration(); // sidebars import from here on
 
   log('init: Start to process messages including queued ones');
   ApiTabsListener.start();
@@ -200,6 +212,7 @@ export async function init() {
   MetricsData.addAsync('init: initializing API for other addons', TSTAPI.initAsBackend());
 
   mInitialized = true;
+  mInitializedResolver();
   UniqueId.completeRestoration();
   Tab.broadcastState.enabled = true;
   onReady.dispatch();
@@ -333,25 +346,205 @@ async function rebuildAll(windows) {
   return restoredFromCache;
 }
 
-export async function reload(options = {}) {
-  mPreloadedCaches.clear();
-  for (const win of TabsStore.windows.values()) {
-    win.clear();
+// On Chrome this is not only a last-resort failsafe: it also runs whenever
+// Chrome gives existing tabs new ids (see onTabReplaced()). Runs are
+// serialized; a request that arrives during a run is coalesced into one
+// follow-up run, because the running one may have taken its native snapshot
+// before the change that triggered the request.
+let mReloading = null;
+let mQueuedReload = null;
+
+export function reload(options = {}) {
+  if (mReloading) {
+    if (!mQueuedReload) {
+      const queued = { options: { ...options } };
+      queued.promise = mReloading.catch(_error => {}).then(() => {
+        mQueuedReload = null;
+        return reload(queued.options);
+      });
+      mQueuedReload = queued;
+    }
+    else {
+      mQueuedReload.options.all = mQueuedReload.options.all || options.all;
+      mQueuedReload.options.reason = [mQueuedReload.options.reason, options.reason].filter(Boolean).join(' + ');
+    }
+    breadcrumb('reload', `queued after the running reload: ${options.reason || 'unspecified'}`);
+    return mQueuedReload.promise;
   }
-  TabsStore.clear();
-  const windows = await getAllWindows();
-  await MetricsData.addAsync('reload: rebuildAll', rebuildAll(windows));
-  await MetricsData.addAsync('reload: TreeStructure.loadTreeStructure', TreeStructure.loadTreeStructure(windows));
+  mReloading = reloadInternal(options).catch(error => {
+    console.error('Background.reload: failed ', error);
+    breadcrumb('reload', `failed: ${error}`);
+  }).finally(() => {
+    mReloading = null;
+  });
+  return mReloading;
+}
+
+// Sidebars must not import the store while it is being rebuilt: it is flat
+// or empty until loadTreeStructure() finishes.
+export async function waitUntilReloaded() {
+  while (mReloading || mQueuedReload) {
+    await (mQueuedReload?.promise || mReloading);
+  }
+}
+
+async function reloadInternal(options = {}) {
+  const startedAt = Date.now();
+  breadcrumb('reload', `start: ${options.reason || 'unspecified'}${options.details ? ` (${options.details})` : ''}`);
+
+  let windows = [];
+  let restoredFromCache = new Map();
+  // Debounced saves of the current store must not run while or after it is
+  // rebuilt: they would serialize a half-built tree, or one the rebuild has
+  // just replaced. Changes made right before a reload are reverted
+  // consistently instead: the rebuild restores the last saved state.
+  // (Flushing them first can save positions that the native tab order does
+  // not have yet, and the restore then moves unrelated tabs around.)
+  cancelReservedTabUpdates();
+  TreeStructure.suspendSaving();
+  BackgroundCache.suspendCaching();
+  try {
+    mPreloadedCaches.clear();
+    for (const win of TabsStore.windows.values()) {
+      clearTimeout(win.waitingToSaveTreeStructure);
+      win.waitingToSaveTreeStructure = null;
+      clearTimeout(win.waitingToCacheTree);
+      win.waitingToCacheTree = null;
+      win.clear();
+    }
+    TabsStore.clear();
+    windows = await getAllWindows();
+    restoredFromCache = await MetricsData.addAsync('reload: rebuildAll', rebuildAll(windows));
+    await MetricsData.addAsync('reload: TreeStructure.loadTreeStructure', TreeStructure.loadTreeStructure(windows));
+  }
+  finally {
+    TreeStructure.resumeSaving();
+    BackgroundCache.resumeCaching();
+  }
+  const generation = TabsStore.bumpStoreGeneration();
+  for (const win of windows) {
+    TreeStructure.reserveToSaveTreeStructure(win.id);
+    BackgroundCache.reserveToCacheTree(win.id, 'reload');
+    // Per-tab restore info is only rewritten when tabs are attached or
+    // moved; re-derive it from the rebuilt tree so that it agrees with the
+    // saved structure. Only on Chrome, where the values live in memory
+    // (common/compat-sessions.js): on Firefox it costs several sessions API
+    // calls per tab, and a reload is only a rare failsafe there.
+    if (IS_CHROME) {
+      const tabs = Tab.getAllTabs(win.id);
+      reserveToUpdateAncestors(tabs);
+      reserveToUpdateChildren(tabs);
+      reserveToUpdateInsertionPosition(tabs);
+    }
+  }
+  breadcrumb('reload', `done in ${Date.now() - startedAt}ms: ${windows.map(win => `win ${win.id} cache ${restoredFromCache.get(win.id) ? 'hit' : 'miss'}`).join(', ')}`);
   if (!options.all)
     return;
   for (const win of TabsStore.windows.values()) {
     if (!SidebarConnection.isOpen(win.id))
       continue;
-    log('reload all sidebars: ', stack());
+    log(`reload the sidebar for window ${win.id}: `, stack());
     browser.runtime.sendMessage({
-      type: Constants.kCOMMAND_RELOAD
+      type:     Constants.kCOMMAND_RELOAD,
+      windowId: win.id,
+      generation,
     }).catch(ApiTabs.createErrorSuppressor());
   }
+}
+
+// Chrome can swap a tab's contents in place and give the tab a new id
+// (tabs.onReplaced) without onCreated/onRemoved, e.g. Memory Saver discards
+// on builds where the WebContentsDiscard feature is disabled. Everything TST
+// tracks is keyed by tab id, so the tracked tab is renamed in place
+// (Tab.replaceId()); common/compat-sessions.js has already moved its session
+// values to the new id. Rebuilding the whole store instead would race TST's
+// deferred work (native moves, debounced saves) and lose or scramble recent
+// tree changes. Sidebars keep their own copy of the tree keyed by tab id, so
+// the sidebar of the window is reloaded.
+const DELAY_TO_RELOAD_SIDEBAR_FOR_REPLACED_TABS = 250;
+const DELAY_TO_RELOAD_FOR_REPLACED_TABS = 250;
+const mSidebarReloadTimers = new Map();
+let mReloadForReplacedTabsTimer = null;
+const mReplacedTabIdsToReload = [];
+
+function onTabReplaced(addedTabId, removedTabId) {
+  log('tabs.onReplaced: ', { addedTabId, removedTabId });
+  // Messages composed before the change still carry the old id (e.g. a drop
+  // in a sidebar that has not reloaded yet).
+  TabsStore.rememberReplacedTabId(removedTabId, addedTabId);
+  // Rename synchronously: events for the new id that follow (e.g. the tab
+  // being closed right away) must find the tab. Not while the store is being
+  // built or rebuilt: the tab may not be tracked under either id yet.
+  if (mInitialized &&
+      !mReloading &&
+      renameReplacedTab(addedTabId, removedTabId))
+    return;
+  reconcileReplacedTab(addedTabId, removedTabId);
+}
+
+function renameReplacedTab(addedTabId, removedTabId) {
+  const tab = Tab.replaceId(removedTabId, addedTabId);
+  if (!tab)
+    return false;
+  Tree.replaceUnattachableTabId(removedTabId, addedTabId);
+  TabsStore.bumpStoreGeneration();
+  breadcrumb('replaced', `tab ${removedTabId} -> ${addedTabId} renamed in place (win ${tab.windowId})`);
+  BackgroundCache.reserveToCacheTree(tab.windowId, 'tab id replaced'); // the cache stores raw tab ids
+  reserveToReloadSidebar(tab.windowId);
+  return true;
+}
+
+function reserveToReloadSidebar(windowId) {
+  if (mSidebarReloadTimers.has(windowId))
+    clearTimeout(mSidebarReloadTimers.get(windowId));
+  // Debounced: Memory Saver can discard several tabs at once.
+  mSidebarReloadTimers.set(windowId, setTimeout(() => {
+    mSidebarReloadTimers.delete(windowId);
+    if (!SidebarConnection.isOpen(windowId))
+      return; // a sidebar opened later imports the renamed tree anyway
+    log(`reload the sidebar for window ${windowId} for replaced tab ids`);
+    browser.runtime.sendMessage({
+      type:       Constants.kCOMMAND_RELOAD,
+      windowId,
+      generation: TabsStore.getStoreGeneration(),
+    }).catch(ApiTabs.createErrorSuppressor());
+  }, DELAY_TO_RELOAD_SIDEBAR_FOR_REPLACED_TABS));
+}
+
+// The replacement arrived while the store was being built or rebuilt, or
+// the old id was not tracked. Once that is done: nothing to do if the native
+// snapshot already had the new id, rename if the old id got tracked, and
+// rebuild if the store still cannot be matched to the native tabs.
+async function reconcileReplacedTab(addedTabId, removedTabId) {
+  await mPromisedInitialized;
+  await waitUntilReloaded();
+
+  if (Tab.get(addedTabId) &&
+      !Tab.get(removedTabId))
+    return;
+  if (renameReplacedTab(addedTabId, removedTabId))
+    return;
+
+  let windowId = Tab.get(removedTabId)?.windowId;
+  if (!windowId) {
+    const nativeTab = await browser.tabs.get(addedTabId).catch(ApiTabs.createErrorSuppressor());
+    windowId = nativeTab?.windowId;
+  }
+  if (!windowId ||
+      !TabsStore.windows.has(windowId))
+    return;
+
+  mReplacedTabIdsToReload.push(`${removedTabId}->${addedTabId}`);
+  if (mReloadForReplacedTabsTimer)
+    clearTimeout(mReloadForReplacedTabsTimer);
+  mReloadForReplacedTabsTimer = setTimeout(() => {
+    mReloadForReplacedTabsTimer = null;
+    const replaced = mReplacedTabIdsToReload.splice(0);
+    reload({
+      all:    true,
+      reason: `tab ids replaced but not tracked: ${replaced.join(', ')}`,
+    });
+  }, DELAY_TO_RELOAD_FOR_REPLACED_TABS);
 }
 
 export async function tryStartHandleAccelKeyOnTab(tab) {
@@ -564,6 +757,22 @@ async function updateSubtreeCollapsed(tab) {
   if (!TabsStore.ensureLivingItem(tab))
     return;
   tab.$TST.toggleState(Constants.kTAB_STATE_SUBTREE_COLLAPSED, tab.$TST.subtreeCollapsed, { permanently: true });
+}
+
+// Drop per-tab persistence still waiting for its debounce timer: the timers
+// hold tab objects of the store Background.reload() is about to discard.
+function cancelReservedTabUpdates() {
+  for (const reserve of [
+    reserveToUpdateInsertionPosition,
+    reserveToUpdateAncestors,
+    reserveToUpdateChildren,
+    reserveToUpdateSubtreeCollapsed,
+  ]) {
+    for (const reserved of reserve.reserved.values()) {
+      clearTimeout(reserved.timer);
+    }
+    reserve.reserved.clear();
+  }
 }
 
 export async function confirmToCloseTabs(tabs, {

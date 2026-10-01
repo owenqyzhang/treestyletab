@@ -284,6 +284,14 @@ function buildCompatBrowser(chrome) {
     mPreviousActiveTabs.set(activeInfo.windowId, mCurrentActiveTabs.get(activeInfo.windowId));
     mCurrentActiveTabs.set(activeInfo.windowId, activeInfo.tabId);
   });
+  chrome.tabs.onReplaced.addListener((addedTabId, removedTabId) => {
+    for (const map of [mCurrentActiveTabs, mPreviousActiveTabs]) {
+      for (const [windowId, tabId] of map.entries()) {
+        if (tabId == removedTabId)
+          map.set(windowId, addedTabId);
+      }
+    }
+  });
   chrome.tabs.query({ active: true }).then(tabs => {
     for (const tab of tabs) {
       if (!mCurrentActiveTabs.has(tab.windowId))

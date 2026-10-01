@@ -728,7 +728,17 @@ async function onNewTabTracked(tab, info) {
     }
 
     // tab can be changed while creating!
-    const renewedTab = await browser.tabs.get(tab.id).catch(ApiTabs.createErrorHandler(ApiTabs.handleMissingTabError));
+    // On Chrome its id can also be replaced (tabs.onReplaced) while this
+    // request is in flight: Tab.replaceId() renames the tab in place, so the
+    // answer for the old id is missing or stale. Ask again with the new id.
+    let renewedTab;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const requestedId = tab.id;
+      renewedTab = await browser.tabs.get(requestedId).catch(ApiTabs.createErrorHandler(ApiTabs.handleMissingTabError));
+      if (tab.id == requestedId)
+        break;
+      renewedTab = null;
+    }
     metric.add('renewedTab');
     if (!renewedTab) {
       log(`onNewTabTracked(${dumpTab(tab)}): tab ${tab.id} is closed while tracking`);
@@ -746,7 +756,8 @@ async function onNewTabTracked(tab, info) {
     const changedProps = {};
     for (const key of Object.keys(renewedTab)) {
       const value = renewedTab[key];
-      if (tab[key] == value)
+      if (tab[key] == value ||
+          key == 'id')
         continue;
       if (key == 'openerTabId' &&
           info.trigger == 'tabs.onAttached' &&
@@ -1118,10 +1129,19 @@ async function onAttached(tabId, attachInfo) {
     await previous;
 
   try {
+    // On Chrome the tab may have been given a new id (tabs.onReplaced) since
+    // this event was fired, or while we are waiting below.
+    tabId = TabsStore.resolveReplacedTabId(tabId);
     log('tabs.onAttached, id: ', tabId, attachInfo);
     let tab = Tab.get(tabId);
     await ensureSessionTabValueStored(tab);
     let attachedTab = await browser.tabs.get(tabId).catch(ApiTabs.createErrorHandler(ApiTabs.handleMissingTabError));
+    if (!attachedTab &&
+        TabsStore.resolveReplacedTabId(tabId) != tabId) {
+      tabId = TabsStore.resolveReplacedTabId(tabId);
+      tab = Tab.get(tabId);
+      attachedTab = await browser.tabs.get(tabId).catch(ApiTabs.createErrorHandler(ApiTabs.handleMissingTabError));
+    }
     if (!attachedTab) {
       // We sometimes fail to get window and tab via API if it is opened
       // as a popup window but not exposed to API yet. So for safety

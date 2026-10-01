@@ -56,6 +56,23 @@ export function startTracking() {
   Tree.onSubtreeCollapsedStateChanging.addListener(tab => { reserveToSaveTreeStructure(tab.windowId); });
 }
 
+function breadcrumb(label, detail) {
+  globalThis.__treestyletabBreadcrumb?.(label, detail); // eslint-disable-line no-underscore-dangle
+}
+
+// While the background rebuilds its store (Background.reload()), a save
+// would persist a partial or flat tree, which the rebuild itself or the next
+// restore would then read back.
+let mSavingSuspended = false;
+
+export function suspendSaving() {
+  mSavingSuspended = true;
+}
+
+export function resumeSaving() {
+  mSavingSuspended = false;
+}
+
 export function reserveToSaveTreeStructure(windowId) {
   const win = TabsStore.windows.get(windowId);
   if (!win)
@@ -69,13 +86,16 @@ export function reserveToSaveTreeStructure(windowId) {
 }
 async function saveTreeStructure(windowId) {
   const win = TabsStore.windows.get(windowId);
-  if (!win)
+  if (!win ||
+      mSavingSuspended)
     return;
 
   const nativeWin = await browser.windows.get(windowId).catch(ApiTabs.createErrorSuppressor());
   if (!nativeWin)
     return;
 
+  if (mSavingSuspended)
+    return;
   const structure = TreeBehavior.getTreeStructureFromTabs(Tab.getAllTabs(windowId));
   await browser.sessions.setWindowValue(
     windowId,
@@ -138,13 +158,16 @@ export async function loadTreeStructure(windows, restoredFromCacheResults) {
             tab.$TST.temporaryMetadata.set('treeStructureAlreadyRestoredFromSessionData', true);
           }
           MetricsData.add('loadTreeStructure: Tree.applyTreeStructureToTabs');
+          breadcrumb('structure', `win ${win.id}: applied saved structure of ${structure.length}/${tabs.length} tabs at offset ${tabsOffset}`);
         }
         else {
           MetricsData.add('loadTreeStructure: mismatched signature');
+          breadcrumb('structure', `win ${win.id}: saved structure of ${structure.length} tabs does not match the ${tabs.length} tabs (unique ids differ)`);
         }
       }
       else {
         MetricsData.add('loadTreeStructure: no valid structure information');
+        breadcrumb('structure', `win ${win.id}: no usable saved structure (${structure ? structure.length : 'none'} for ${tabs.length} tabs)`);
       }
     }
     catch(error) {
@@ -153,6 +176,7 @@ export async function loadTreeStructure(windows, restoredFromCacheResults) {
     }
     if (!windowStateCompletelyApplied) {
       log(`Tree information for the window ${win.id} is not same to actual state. Fallback to restoration from tab relations.`);
+      breadcrumb('structure', `win ${win.id}: falling back to per-tab restore info`);
       MetricsData.add('loadTreeStructure: fallback to reserveToAttachTabFromRestoredInfo');
       const unattachedTabs = new Set(tabs);
       for (const tab of tabs) {

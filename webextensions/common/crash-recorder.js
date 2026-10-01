@@ -21,11 +21,21 @@
 /* eslint-disable no-underscore-dangle */ // intentional globalThis markers
 
 const STORAGE_KEY = 'tst-crash-log';
+// Entries of a worker that hit an error before it could read the previous
+// log (see flushNow()); merged by the next worker.
+const PENDING_STORAGE_KEY = 'tst-crash-log-pending';
+// At browser startup the read of the previous log has been seen taking tens
+// of seconds; do not hold back persistence that long.
+const PRIOR_LOAD_TIMEOUT = 5000;
 const MAX_ENTRIES = 300;
 
 const mBuffer = [];
 let mFlushTimer = null;
 let mStartedAt = Date.now();
+// Until the previous worker's log has been read, a flush would overwrite
+// it with only this worker's entries.
+let mPriorLoaded = false;
+let mPendingStored = false;
 
 function nowTag() {
   // milliseconds since this worker instance started, for ordering
@@ -47,6 +57,10 @@ function scheduleFlush() {
 
 async function flush() {
   mFlushTimer = null;
+  if (!mPriorLoaded) {
+    scheduleFlush();
+    return;
+  }
   try {
     await chrome.storage.local.set({
       [STORAGE_KEY]: {
@@ -55,6 +69,10 @@ async function flush() {
         entries:         [...mBuffer],
       },
     });
+    if (mPendingStored) { // now part of the main log
+      mPendingStored = false;
+      chrome.storage.local.remove(PENDING_STORAGE_KEY).catch(() => {});
+    }
   }
   catch(_error) {
     // storage may be momentarily unavailable; the next event re-schedules
@@ -67,6 +85,18 @@ function flushNow() {
   if (mFlushTimer) {
     clearTimeout(mFlushTimer);
     mFlushTimer = null;
+  }
+  if (!mPriorLoaded) {
+    // The main log cannot be written yet, and a worker that fails while it
+    // is being registered dies before the read completes: keep the entries
+    // aside right away.
+    mPendingStored = true;
+    chrome.storage.local.set({
+      [PENDING_STORAGE_KEY]: {
+        workerStartedAt: mStartedAt,
+        entries:         [...mBuffer],
+      },
+    }).catch(() => {});
   }
   flush();
 }
@@ -85,16 +115,36 @@ export function init() {
   globalThis.__treestyletabCrashRecorderInstalled = true;
   mStartedAt = Date.now();
 
-  // Load any prior buffer so history spans restarts (bounded).
-  chrome.storage.local.get(STORAGE_KEY).then(stored => {
+  // Load the previous worker's buffer so history spans restarts (bounded).
+  // A worker woken by an event records entries before this read resolves,
+  // so merge instead of only carrying over into an empty buffer.
+  const startedLabel = `service worker started at ${new Date(mStartedAt).toISOString()}`;
+  const markPriorLoaded = () => {
+    if (mPriorLoaded)
+      return;
+    mPriorLoaded = true;
+    record('worker', startedLabel);
+  };
+  // Storage operations run in order, so even if the read resolves after the
+  // timeout below (and after a flush), it returns the previous log.
+  chrome.storage.local.get([STORAGE_KEY, PENDING_STORAGE_KEY]).then(stored => {
     const prior = stored?.[STORAGE_KEY]?.entries;
-    if (Array.isArray(prior) && prior.length && mBuffer.length == 0) {
-      const carried = prior.slice(-MAX_ENTRIES / 2);
-      mBuffer.unshift(`----- worker restarted (previous session above) -----`, ...[]);
-      mBuffer.unshift(...carried);
+    const carried = Array.isArray(prior) ? prior.slice(-MAX_ENTRIES / 2) : [];
+    const pending = stored?.[PENDING_STORAGE_KEY];
+    const orphaned = (pending?.workerStartedAt != mStartedAt && Array.isArray(pending?.entries)) ? pending.entries.slice(-MAX_ENTRIES / 2) : [];
+    if (orphaned.length > 0) {
+      mPendingStored = true; // remove it with the next main write
+      carried.push(`----- a worker died before saving its log; its entries: -----`, ...orphaned);
     }
-    record('worker', 'service worker started');
-  }).catch(() => record('worker', 'service worker started'));
+    if (carried.length > 0) {
+      mBuffer.unshift(...carried, `----- worker restarted (previous worker above, timestamps restart) -----`);
+      while (mBuffer.length > MAX_ENTRIES) {
+        mBuffer.shift();
+      }
+      scheduleFlush(); // the timeout may already have let this worker's entries overwrite it
+    }
+  }).catch(() => {}).then(markPriorLoaded);
+  setTimeout(markPriorLoaded, PRIOR_LOAD_TIMEOUT);
 
   const onError = event => {
     record('ERROR', `${event.message || ''} @ ${event.filename || ''}:${event.lineno || ''} ${describeError(event.error)}`);
@@ -121,6 +171,9 @@ export function init() {
     chrome.tabs.onDetached.addListener((tabId, info) => record('onDetached', `tab ${tabId} from win ${info.oldWindowId} @${info.oldPosition}`));
     chrome.tabs.onCreated.addListener(tab => record('onCreated', `tab ${tab.id} @${tab.index} win ${tab.windowId} opener ${tab.openerTabId ?? '-'}`));
     chrome.tabs.onRemoved.addListener((tabId, info) => record('onRemoved', `tab ${tabId} win ${info.windowId} windowClosing ${info.isWindowClosing}`));
+    // Chrome swaps a tab's contents in place and changes its id without
+    // onCreated/onRemoved (e.g. Memory Saver discards on some builds).
+    chrome.tabs.onReplaced.addListener((addedTabId, removedTabId) => record('onReplaced', `tab ${removedTabId} -> ${addedTabId}`));
     chrome.tabs.onActivated.addListener(info => record('onActivated', `tab ${info.tabId} win ${info.windowId}`));
   }
   catch(error) {

@@ -255,7 +255,7 @@ if (Constants.IS_BACKGROUND) {
       if (message.type == Constants.kCONNECTION_HEARTBEAT)
         updateTimeoutTimer();
       else
-        onMessage.dispatch(windowId, message);
+        onMessage.dispatch(windowId, TabsStore.resolveReplacedTabIdsInMessage(message));
     };
     port.onMessage.addListener(receiver);
     mReceivers.set(windowId, receiver);

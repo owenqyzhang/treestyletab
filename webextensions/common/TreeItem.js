@@ -3189,6 +3189,102 @@ export class Tab extends TreeItem {
     return TabsStore.tabs.has(tabId);
   }
 
+  // Chrome can give an existing tab a new id (tabs.onReplaced, e.g. when a
+  // tab is discarded on builds where the WebContentsDiscard feature is
+  // disabled). Firefox never does, so all tracked state is keyed by tab id.
+  // Move the tracked tab, its index memberships and every reference to its
+  // id over to the new id, keeping its tree position, states and pending
+  // operations. Relations are rewritten directly: the parent/children
+  // setters have side effects that depend on the old id.
+  static replaceId(oldId, newId) {
+    const tab = Tab.get(oldId);
+    if (!tab?.$TST ||
+        !newId ||
+        oldId == newId ||
+        Tab.get(newId))
+      return null;
+
+    const win = TabsStore.windows.get(tab.windowId);
+    TabsStore.replaceTabId(tab, oldId, newId);
+    win?.replaceTabId(oldId, newId);
+    tab.id = newId;
+    tab.$TST.id = newId;
+
+    const parent = tab.$TST.parent;
+    if (parent) {
+      const index = parent.$TST.childIds.indexOf(oldId);
+      if (index > -1)
+        parent.$TST.childIds[index] = newId;
+      parent.$TST.setAttribute(Constants.kCHILDREN, `|${parent.$TST.childIds.join('|')}|`);
+    }
+    for (const child of tab.$TST.children) {
+      child.$TST.parentId = newId;
+      child.$TST.setAttribute(Constants.kPARENT, newId);
+    }
+    // Descendants cache this tab's old id among their ancestor ids.
+    tab.$TST.invalidateCachedAncestors();
+    tab.$TST.invalidateCacheUpward();
+
+    // parent id => Set of child ids
+    for (const [, map] of mAllChildrenIdsMaps) {
+      TabsStore.replaceMapKey(map, oldId, newId);
+      const siblingIds = parent && map.get(parent.id);
+      if (siblingIds?.delete(oldId))
+        siblingIds.add(newId);
+    }
+    for (const map of [
+      mOpenedResolvers, // otherwise $TST.opened never resolves for a tab replaced while it is being opened
+      mPossibleOpenerBookmarks,
+      Tab.bufferedTooltipTextChanges,
+      Tab.bufferedStatesChanges,
+    ]) {
+      TabsStore.replaceMapKey(map, oldId, newId);
+    }
+    for (const change of [
+      Tab.bufferedTooltipTextChanges.get(newId),
+      Tab.bufferedStatesChanges.get(newId),
+    ]) {
+      if (change)
+        change.tabId = newId;
+    }
+    mPromisedTrackedTabs.delete(`${oldId}:true`);
+    mPromisedTrackedTabs.delete(`${oldId}:false`);
+
+    const replaceId = id => id == oldId ? newId : id;
+    for (const other of (win ? win.tabs.values() : [])) {
+      if (other.openerTabId == oldId)
+        other.openerTabId = newId;
+      if (other.successorTabId == oldId)
+        other.successorTabId = newId;
+      const otherTST = other.$TST;
+      if (!otherTST)
+        continue;
+      otherTST.lastPreviousTabId = replaceId(otherTST.lastPreviousTabId);
+      otherTST.lastNextTabId = replaceId(otherTST.lastNextTabId);
+      if (otherTST.uniqueId?.originalTabId == oldId)
+        otherTST.uniqueId.originalTabId = newId;
+      if (Array.isArray(otherTST.updatingOpenerTabIds))
+        otherTST.updatingOpenerTabIds = otherTST.updatingOpenerTabIds.map(replaceId);
+      for (const key of ['possibleOpenerTab', 'lastSuccessorTabId', 'parentIdBeforeMoved', 'updatedOpenerTabId']) {
+        if (otherTST.temporaryMetadata.get(key) == oldId)
+          otherTST.temporaryMetadata.set(key, newId);
+      }
+      const childIdsBeforeMoved = otherTST.temporaryMetadata.get('childIdsBeforeMoved');
+      if (Array.isArray(childIdsBeforeMoved))
+        otherTST.temporaryMetadata.set('childIdsBeforeMoved', childIdsBeforeMoved.map(replaceId));
+    }
+
+    // An onActivated for the new id may have arrived before onReplaced and
+    // cleared the active tab of the window.
+    if (tab.active &&
+        !TabsStore.activeTabInWindow.get(tab.windowId))
+      TabsStore.activeTabInWindow.set(tab.windowId, tab);
+
+    TabsStore.rememberRemovedTabId(oldId); // waiters for the old id give up immediately
+    Tab.onTracked.dispatch(tab); // releases waiters for the new id
+    return tab;
+  }
+
   static get(tabId) {
     if (!tabId) {
       return null;

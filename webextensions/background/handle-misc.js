@@ -578,13 +578,19 @@ function onMessage(message, sender) {
       !message.type.startsWith('treestyletab:'))
     return;
 
+  message = TabsStore.resolveReplacedTabIdsInMessage(message);
+
   //log('onMessage: ', message, sender);
   switch (message.type) {
     case Constants.kCOMMAND_GET_INSTANCE_ID:
       return Promise.resolve(Background.instanceId);
 
     case Constants.kCOMMAND_RELOAD:
-      return Background.reload({ all: message.all });
+      return Background.reload({
+        all:     message.all,
+        reason:  message.reason || 'requested by a sidebar',
+        details: message.details,
+      });
 
     case Constants.kCOMMAND_REQUEST_UNIQUE_ID:
       return (async () => {
@@ -616,22 +622,28 @@ function onMessage(message, sender) {
     case Constants.kCOMMAND_GET_USER_STYLE_RULES:
       return Promise.resolve(loadUserStyleRules());
 
+    // While Background.reload() rebuilds the store it is flat or empty;
+    // a sidebar importing it then would show (and act on) a flat tree.
     case Constants.kCOMMAND_PING_TO_BACKGROUND: // return tabs as the pong, to optimize further initialization tasks in the sidebar
-      TabsUpdate.completeLoadingTabs(message.windowId); // don't wait here for better performance
-      return Promise.resolve(TabsStore.windows.get(message.windowId).export(true));
+      return Background.waitUntilReloaded().then(() => {
+        TabsUpdate.completeLoadingTabs(message.windowId); // don't wait here for better performance
+        return TabsStore.windows.get(message.windowId).export(true);
+      });
 
     case Constants.kCOMMAND_PULL_TABS:
-      if (message.windowId) {
-        TabsUpdate.completeLoadingTabs(message.windowId); // don't wait here for better perfomance
-        return Promise.resolve(TabsStore.windows.get(message.windowId).export(true).tabs);
-      }
-      return Promise.resolve(message.tabIds.map(id => {
-        const tab = Tab.get(id);
-        return tab?.$TST.export(true);
-      }));
+      return Background.waitUntilReloaded().then(() => {
+        if (message.windowId) {
+          TabsUpdate.completeLoadingTabs(message.windowId); // don't wait here for better perfomance
+          return TabsStore.windows.get(message.windowId).export(true).tabs;
+        }
+        return message.tabIds.map(id => {
+          const tab = Tab.get(id);
+          return tab?.$TST.export(true);
+        });
+      });
 
     case Constants.kCOMMAND_PULL_TABS_ORDER:
-      return Promise.resolve(TabsStore.windows.get(message.windowId).order);
+      return Background.waitUntilReloaded().then(() => TabsStore.windows.get(message.windowId).order);
 
     case Constants.kCOMMAND_PULL_TREE_STRUCTURE:
       return (async () => {
