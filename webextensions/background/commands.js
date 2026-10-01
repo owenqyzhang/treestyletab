@@ -593,6 +593,19 @@ async function performTreeItemsDragDrop(params = {}) {
 }
 
 async function performTreeItemsDragDropWithMessage(message) {
+  // A sidebar that has not reloaded since Chrome replaced a tab id (the
+  // reload is deferred until the drag ends) still sends the old ids.
+  const remapTabItem = item => item?.type == TreeItem.TYPE_TAB ? { ...item, id: TabsStore.resolveReplacedTabId(item.id) } : item;
+  message = {
+    ...message,
+    items:         message.import ? message.items : message.items.map(remapTabItem),
+    droppedOn:     remapTabItem(message.droppedOn),
+    droppedBefore: remapTabItem(message.droppedBefore),
+    droppedAfter:  remapTabItem(message.droppedAfter),
+    attachToId:    message.attachToId && TabsStore.resolveReplacedTabId(message.attachToId),
+    insertBefore:  remapTabItem(message.insertBefore),
+    insertAfter:   remapTabItem(message.insertAfter),
+  };
   const draggedTabIds = message.import ? [] : message.items.map(item => item.type == TreeItem.TYPE_TAB && item.id || null);
   await Tab.waitUntilTracked(draggedTabIds.concat([
     message.droppedOn?.type == TreeItem.TYPE_TAB && message.droppedOn.id,

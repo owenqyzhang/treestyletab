@@ -25,7 +25,8 @@ default branch; `manifest.firefox.json` preserves the original manifest.
     (survives service-worker restarts) and a URL-fingerprinted snapshot in
     `chrome.storage.local` re-associates them with restored tabs after a full
     browser restart. Tab duplication copies values; restoring a recently
-    closed tab re-attaches its values.
+    closed tab re-attaches its values. When Chrome replaces a tab's id
+    (`tabs.onReplaced`, see below) the values move to the new id.
   - Successor tabs (`tabs.moveInSuccession`, `tabs.update({successorTabId})`)
     → `common/compat-successor.js`: when the active tab closes, the recorded
     successor is focused (Chrome briefly focuses its own pick first).
@@ -46,6 +47,21 @@ default branch; `manifest.firefox.json` preserves the original manifest.
   rehydrates from `storage.session` after a restart.
 - Icon coloring uses TST's built-in `simulateSVGContextFill` mode (Firefox's
   `-moz-context-properties`/`context-fill` does not exist in Chrome).
+- **Tab id replacement**: on some Chrome builds (the `WebContentsDiscard`
+  feature disabled, e.g. by a field trial) discarding a tab — including
+  Memory Saver discards — swaps its contents and gives it a new id, reported
+  only through `tabs.onReplaced`. TST's state is keyed by tab id, so the
+  background renames the tracked tab in place (`Tab.replaceId()`: store
+  indexes, window bookkeeping, tree relations and references from other
+  tabs), the session values move to the new id, and the sidebar of that
+  window reloads. Rebuilding the whole store instead raced TST's deferred
+  work (native moves, debounced saves) and lost or scrambled tree changes.
+  Reproduce with Chrome for Testing launched with
+  `--disable-features=WebContentsDiscard` and `chrome.tabs.discard()`.
+- **Diagnostics**: `common/crash-recorder.js` keeps a ring buffer of errors
+  and tab/tree breadcrumbs (`[onReplaced]`, `[reload]`, `[structure]`,
+  `[attach]`, `[detach]`, ...) in `storage.local`, across service-worker
+  restarts. Run `dumpCrashLog()` in the service worker console.
 
 ## Known limitations on Chrome
 

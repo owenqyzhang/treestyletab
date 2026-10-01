@@ -44,6 +44,23 @@ export function init() {
     mActiveTabs.delete(windowId);
   });
 
+  // A tab whose contents Chrome swapped keeps its place in successor
+  // chains under its new id.
+  chrome.tabs.onReplaced.addListener((addedTabId, removedTabId) => {
+    if (mSuccessors.has(removedTabId)) {
+      mSuccessors.set(addedTabId, mSuccessors.get(removedTabId));
+      mSuccessors.delete(removedTabId);
+    }
+    for (const [id, successorId] of mSuccessors.entries()) {
+      if (successorId == removedTabId)
+        mSuccessors.set(id, addedTabId);
+    }
+    for (const [windowId, tabId] of mActiveTabs.entries()) {
+      if (tabId == removedTabId)
+        mActiveTabs.set(windowId, addedTabId);
+    }
+  });
+
   chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
     const successor  = mSuccessors.get(tabId);
     const wasActive  = mActiveTabs.get(removeInfo.windowId) == tabId;

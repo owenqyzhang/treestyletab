@@ -336,6 +336,54 @@ export default class Window {
   clearInternalMoving(tabId) { this.internalMovingTabs.delete(tabId); }
   clearAlreadyMoved(tabId)   { this.alreadyMovedTabs.delete(tabId); }
 
+  // Chrome gave a tracked tab a new id (tabs.onReplaced): keep its slot and
+  // the bookkeeping of operations in flight (e.g. a pending internal move
+  // must still be recognized as internal when its onMoved arrives).
+  replaceTabId(oldId, newId) {
+    TabsStore.replaceMapKey(this.tabs, oldId, newId);
+    const index = this.order.indexOf(oldId);
+    if (index > -1)
+      this.order[index] = newId;
+
+    TabsStore.replaceMapKey(this.internalMovingTabs, oldId, newId);
+    TabsStore.replaceMapKey(this.alreadyMovedTabs, oldId, newId);
+    for (const ids of [
+      this.internalClosingTabs,
+      this.keepDescendantsTabs,
+      this.highlightingTabs,
+      this.tabsToBeHighlightedAlone,
+      this.internallyMovingTabsForUpdatedNativeTabGroups,
+      this.internallyFocusingTabs,
+      this.internallyFocusingByMouseTabs,
+      this.internallyFocusingSilentlyTabs,
+      this.openingTabs,
+      this.toBeAttachedTabs,
+      this.toBeDetachedTabs,
+    ]) {
+      if (ids.delete(oldId))
+        ids.add(newId);
+    }
+
+    const openedNewTab = this.openedNewTabs.get(oldId);
+    if (TabsStore.replaceMapKey(this.openedNewTabs, oldId, newId) &&
+        openedNewTab?.id == oldId)
+      openedNewTab.id = newId;
+
+    // opener id => related tab id
+    for (const relatedTabs of [this.lastRelatedTabs, this.previousLastRelatedTabs]) {
+      TabsStore.replaceMapKey(relatedTabs, oldId, newId);
+      for (const [openerId, relatedId] of relatedTabs) {
+        if (relatedId == oldId)
+          relatedTabs.set(openerId, newId);
+      }
+    }
+
+    if (this.lastActiveTab == oldId)
+      this.lastActiveTab = newId;
+    if (this.lastWindowCacheOwner?.id == oldId)
+      this.lastWindowCacheOwner.id = newId;
+  }
+
   export(full) {
     const tabs = [];
     for (const tab of this.getOrderedTabs()) {
@@ -343,7 +391,8 @@ export default class Window {
     }
     return {
       tabs,
-      tabGroups: [...this.tabGroups.values()].map(group => group.$TST.sanitized),
+      tabGroups:  [...this.tabGroups.values()].map(group => group.$TST.sanitized),
+      generation: TabsStore.getStoreGeneration(),
     };
   }
 }

@@ -37,6 +37,18 @@ const kCONTENTS_VERSION = 5;
 let mActivated = false;
 const mCaches = {};
 
+// See TreeStructure.suspendSaving(): caching the store while it is being
+// rebuilt would hand a partial tree to the next cache restore.
+let mCachingSuspended = false;
+
+export function suspendCaching() {
+  mCachingSuspended = true;
+}
+
+export function resumeCaching() {
+  mCachingSuspended = false;
+}
+
 export function activate() {
   mActivated = true;
   configs.$addObserver(onConfigChange);
@@ -134,8 +146,9 @@ export async function restoreWindowFromEffectiveWindowCache(windowId, options = 
     // to synchronize state of tabs completely.
     log('reload sidebar for a tree restored from cache');
     browser.runtime.sendMessage({
-      type: Constants.kCOMMAND_RELOAD,
+      type:       Constants.kCOMMAND_RELOAD,
       windowId,
+      generation: TabsStore.bumpStoreGeneration(),
     }).catch(ApiTabs.createErrorSuppressor());
   }
   else {
@@ -465,6 +478,7 @@ async function cacheTree(windowId, triggers) {
     await Tab.waitUntilTrackedAll(windowId);
   const win = TabsStore.windows.get(windowId);
   if (!win ||
+      mCachingSuspended ||
       !configs.useCachedTree)
     return;
   const signature = getWindowSignature(Tab.getAllTabs(windowId));

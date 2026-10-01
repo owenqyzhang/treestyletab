@@ -16,18 +16,37 @@
 #   - recently closed tabs keep their values in an LRU for a while, so
 #     values are re-attached when the user restores a closed tab
 #     (Ctrl/Cmd+Shift+T), detected via chrome.sessions.getRecentlyClosed.
+#   - Chrome can swap a tab's contents in place and give the tab a new id
+#     (tabs.onReplaced; e.g. Memory Saver discards on builds where the
+#     WebContentsDiscard feature is off). Firefox ids never change, so the
+#     values follow the tab to its new id, and calls that still use the old
+#     id are redirected.
 */
 'use strict';
+
+// Constants.kPERSISTENT_ID. Not imported: browser-compat.js imports this
+// module, so its imports are evaluated before the browser facade exists, and
+// constants.js calls browser.* at the top level.
+const PERSISTENT_ID_KEY = 'data-persistent-id';
 
 const SESSION_STORAGE_KEY = 'treestyletab:compat-sessions:live';
 const LOCAL_STORAGE_KEY   = 'treestyletab:compat-sessions:snapshot';
 const CLOSED_LRU_SIZE     = 50;
 const STARTUP_LEFTOVER_LIFETIME_MSEC = 5 * 60 * 1000;
+const REPLACED_ID_ALIASES_SIZE = 1000;
 
 const mTabValues    = new Map(); // tabId    => { key => value }
 const mWindowValues = new Map(); // windowId => { key => value }
 const mTabUrls      = new Map(); // tabId    => last known URL
 const mClosedTabs   = [];        // [{ url, values, closedAt }]
+
+// Tab ids are never reused within a browser session, so an old => new
+// alias stays valid for the whole session.
+const mReplacedTabIds = new Map(); // removed tabId => added tabId
+// Replacements reported before the persisted values were loaded; applied
+// right after loading, before any API call can observe the values.
+const mPendingReplacements = [];
+let mValuesLoaded = false;
 
 // Persisted entries not consumed by the startup association; late-restored
 // tabs (lazy session restore) are matched against these on creation.
@@ -286,9 +305,76 @@ async function tryReattachValuesToRestoredTab(tab) {
   if (closedIndex < 0)
     return;
   const [closedTab] = mClosedTabs.splice(closedIndex, 1);
-  if (!mTabValues.has(tab.id)) {
-    mTabValues.set(tab.id, closedTab.values);
+  // The tab may have been replaced while we were waiting.
+  const tabId = resolveTabId(tab.id);
+  if (!mTabValues.has(tabId)) {
+    mTabValues.set(tabId, closedTab.values);
     markDirty();
+  }
+}
+
+// ===================================================================
+// Tab id replacement (tabs.onReplaced)
+// ===================================================================
+function resolveTabId(tabId) {
+  // Follow chains (a tab can be replaced more than once); bounded in case
+  // of a corrupted map.
+  for (let hops = 0; hops < 20 && mReplacedTabIds.has(tabId); hops++) {
+    tabId = mReplacedTabIds.get(tabId);
+  }
+  return tabId;
+}
+
+// TST's unique-id value is { id, tabId } and a tabId that is not a live tab
+// marks the tab as restored or duplicated. Writes and copies made with the
+// old id (before or after the replacement) must not leave a dead id there.
+function normalizeValue(key, value) {
+  if (key == PERSISTENT_ID_KEY &&
+      value?.tabId &&
+      mReplacedTabIds.has(value.tabId))
+    return { ...value, tabId: resolveTabId(value.tabId) };
+  return value;
+}
+
+function onTabReplaced(addedTabId, removedTabId) {
+  mReplacedTabIds.set(removedTabId, addedTabId);
+  if (mReplacedTabIds.size > REPLACED_ID_ALIASES_SIZE)
+    mReplacedTabIds.delete(mReplacedTabIds.keys().next().value);
+  if (mValuesLoaded)
+    migrateTabValues(addedTabId, removedTabId);
+  else
+    mPendingReplacements.push([addedTabId, removedTabId]);
+}
+
+function migrateTabValues(addedTabId, removedTabId) {
+  const values = mTabValues.get(removedTabId);
+  if (values) {
+    // Anything already written under the new id is newer: let it win.
+    const existing = mTabValues.get(addedTabId);
+    mTabValues.set(addedTabId, existing ? { ...values, ...existing } : values);
+    mTabValues.delete(removedTabId);
+  }
+  // TST stores { id, tabId } and treats a mismatching tabId as a sign of a
+  // duplicated or restored tab; keep it pointing at the live id.
+  const migrated = mTabValues.get(addedTabId);
+  const persistentId = migrated?.[PERSISTENT_ID_KEY];
+  if (persistentId?.tabId == removedTabId)
+    migrated[PERSISTENT_ID_KEY] = { ...persistentId, tabId: addedTabId };
+
+  const url = mTabUrls.get(removedTabId);
+  if (url) {
+    if (!mTabUrls.has(addedTabId))
+      mTabUrls.set(addedTabId, url);
+    mTabUrls.delete(removedTabId);
+  }
+  if (values)
+    markDirty();
+}
+
+function applyPendingReplacements() {
+  mValuesLoaded = true;
+  for (const [addedTabId, removedTabId] of mPendingReplacements.splice(0)) {
+    migrateTabValues(addedTabId, removedTabId);
   }
 }
 
@@ -326,6 +412,8 @@ function listen() {
         tryReattachStartupLeftovers(tab);
     }
   });
+
+  chrome.tabs.onReplaced.addListener(onTabReplaced);
 
   chrome.tabs.onRemoved.addListener((tabId, _removeInfo) => {
     const values = mTabValues.get(tabId);
@@ -377,7 +465,10 @@ export async function init() {
   if (!mInitPromise) {
     mInitPromise = (async () => {
       listen();
-      await restoreFromSnapshotOrAssociate();
+      await restoreFromSnapshotOrAssociate().catch(error => {
+        console.error('compat-sessions: failed to restore values', error);
+      });
+      applyPendingReplacements();
       const tabs = await chrome.tabs.query({});
       for (const tab of tabs) {
         if (tabUrl(tab))
@@ -394,23 +485,26 @@ export async function init() {
 
 export async function setTabValue(tabId, key, value) {
   await init();
+  tabId = resolveTabId(tabId);
   let values = mTabValues.get(tabId);
   if (!values) {
     values = {};
     mTabValues.set(tabId, values);
   }
-  values[key] = value;
+  values[key] = normalizeValue(key, value);
   markDirty();
 }
 
 export async function getTabValue(tabId, key) {
   await init();
+  tabId = resolveTabId(tabId);
   const values = mTabValues.get(tabId);
-  return values ? values[key] : undefined;
+  return values ? normalizeValue(key, values[key]) : undefined;
 }
 
 export async function removeTabValue(tabId, key) {
   await init();
+  tabId = resolveTabId(tabId);
   const values = mTabValues.get(tabId);
   if (values && key in values) {
     delete values[key];
@@ -451,6 +545,8 @@ export async function removeWindowValue(windowId, key) {
 // Firefox copies session values when a tab is duplicated; Chrome does not.
 export async function copyTabValues(sourceTabId, destinationTabId) {
   await init();
+  sourceTabId = resolveTabId(sourceTabId);
+  destinationTabId = resolveTabId(destinationTabId);
   const values = mTabValues.get(sourceTabId);
   if (values) {
     mTabValues.set(destinationTabId, JSON.parse(JSON.stringify(values)));

@@ -43,6 +43,69 @@ export function clear() {
   tabsByUniqueId.clear();
 }
 
+// Chrome can give an existing tab a new id (tabs.onReplaced). Messages
+// composed before the change (e.g. a drop in a sidebar that has not reloaded
+// yet) still carry the old id. Tab ids are never reused within a browser
+// session, so the mapping stays valid; it is intentionally kept by clear().
+const replacedTabIds = new Map(); // old id => new id
+
+export function rememberReplacedTabId(oldId, newId) {
+  replacedTabIds.set(oldId, newId);
+  if (replacedTabIds.size > 1000)
+    replacedTabIds.delete(replacedTabIds.keys().next().value);
+}
+
+export function resolveReplacedTabId(id) {
+  for (let hops = 0; hops < 20 && replacedTabIds.has(id); hops++) {
+    id = replacedTabIds.get(id);
+  }
+  return id;
+}
+
+// Fields carrying tab ids in messages from sidebars; a sidebar keeps old
+// ids until it reloads (which waits for drags to end).
+const TAB_ID_MESSAGE_FIELDS  = ['tabId', 'baseTabId', 'attachToId', 'parentId', 'insertBeforeId', 'insertAfterId'];
+const TAB_IDS_MESSAGE_FIELDS = ['tabIds', 'highlightedTabIds'];
+
+export function resolveReplacedTabIdsInMessage(message) {
+  if (replacedTabIds.size == 0 ||
+      !message ||
+      typeof message != 'object')
+    return message;
+  let resolved = null;
+  for (const field of TAB_ID_MESSAGE_FIELDS) {
+    if (replacedTabIds.has(message[field])) {
+      resolved = resolved || { ...message };
+      resolved[field] = resolveReplacedTabId(message[field]);
+    }
+  }
+  for (const field of TAB_IDS_MESSAGE_FIELDS) {
+    const ids = message[field];
+    if (Array.isArray(ids) &&
+        ids.some(id => replacedTabIds.has(id))) {
+      resolved = resolved || { ...message };
+      resolved[field] = ids.map(resolveReplacedTabId);
+    }
+  }
+  return resolved || message;
+}
+
+// Changes whenever the background rebuilds its store or re-keys a tab (see
+// Background.reload() and Tab.replaceId()). It is exported with the tree and
+// sent with reload requests, so that a sidebar ignores a request for a tree
+// it has already imported; message order is not guaranteed. Starts from the
+// time this store was created so that it keeps increasing across service
+// worker restarts.
+let mStoreGeneration = Date.now();
+
+export function getStoreGeneration() {
+  return mStoreGeneration;
+}
+
+export function bumpStoreGeneration() {
+  return ++mStoreGeneration;
+}
+
 // need to be exported for debugging
 export const queryLogs = [];
 const MAX_LOGS = 100000;
@@ -370,6 +433,58 @@ function createMapWithName(name) {
   const map = new Map();
   map.name = name;
   return map;
+}
+
+// Per-window indexes keyed by tab id (Map<windowId, Map<tabId, tab>>).
+const TAB_ID_KEYED_INDEXES = [
+  bundledActiveTabsInWindow,
+  livingTabsInWindow,
+  controllableTabsInWindow,
+  removingTabsInWindow,
+  visibleTabsInWindow,
+  expandedTabsInWindow,
+  selectedTabsInWindow,
+  highlightedTabsInWindow,
+  pinnedTabsInWindow,
+  unpinnedTabsInWindow,
+  rootTabsInWindow,
+  groupTabsInWindow,
+  toBeExpandedTabsInWindow,
+  subtreeCollapsableTabsInWindow,
+  draggingTabsInWindow,
+  duplicatingTabsInWindow,
+  toBeGroupedTabsInWindow,
+  nativelyGroupedTabsInWindow,
+  splitViewTabsInWindow,
+  loadingTabsInWindow,
+  unsynchronizedTabsInWindow,
+  virtualScrollRenderableTabsInWindow,
+  scrollPositionCalculationTargetTabsInWindow,
+  canBecomeStickyTabsInWindow,
+];
+
+// Rename a key in place, keeping the iteration order (queries without
+// "ordered" return tabs in insertion order).
+export function replaceMapKey(map, oldKey, newKey) {
+  if (!map?.has(oldKey))
+    return false;
+  const entries = [...map];
+  map.clear();
+  for (const [key, value] of entries) {
+    map.set(key === oldKey ? newKey : key, value);
+  }
+  return true;
+}
+
+// Chrome gave a tracked tab a new id (tabs.onReplaced): re-key it in the
+// store and in every index it belongs to. Re-indexing through
+// removeTabFromIndexes()/updateIndexesForTab() would instead drop it from
+// indexes that only operations maintain (removing, dragging, ...).
+export function replaceTabId(tab, oldId, newId) {
+  replaceMapKey(tabs, oldId, newId);
+  for (const indexes of TAB_ID_KEYED_INDEXES) {
+    replaceMapKey(indexes.get(tab.windowId), oldId, newId);
+  }
 }
 
 export function prepareIndexesForWindow(windowId) {
