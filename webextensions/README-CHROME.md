@@ -126,6 +126,16 @@ masked icons) and `git push --force-with-lease origin chrome-port`.
   lint exits 0 no matter how many are reported. `make chrome` depends on
   `lint`, so a style regression blocks the package too. `make format` applies
   the auto-fixable ones.
+- **Stale service worker**: Chrome keeps running an unpacked extension's
+  service worker from its own copy of the scripts until the extension is
+  reloaded; restarting the browser does not refresh it while the manifest
+  version stays the same, but the sidebar always loads the files on disk.
+  `common/build-id.js` is stamped on every commit by
+  `tools/update-build-id.sh`; when the sidebar or the service worker sees
+  that the running service worker is older than the files on disk, the
+  extension reloads itself once (`common/stale-code.js`). Install the hook
+  once from the repository root:
+  `ln -s ../../webextensions/tools/update-build-id.sh .git/hooks/pre-commit`
 - Masked icons: `make inline_masks` (or `node tools/inline-mask-images.mjs`).
   Idempotent; prints `total: 0` when everything is already inlined. Re-run
   after adding or changing any masked icon.

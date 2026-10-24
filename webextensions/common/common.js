@@ -823,7 +823,7 @@ export function shouldApplyAnimation(configOnly = false) {
 }
 
 
-const LOG_LINE_MAX_LENGTH = 600;
+const LOG_LINE_MAX_LENGTH = 400;
 // Recorded lines that would crowd out the useful ones: menu registration on
 // every service worker start, per-message traces, and storage notifications
 // for bulk data (including the recorder's own, which would loop forever).
@@ -871,13 +871,14 @@ export function log(module, ...args) {
   }, '')}`);
 }
 log.context = '?';
-log.max  = 4000;
+log.max  = 3000;
 log.logs = [];
 log.forceStore = true;
 log.recording = false;
 
-const LOG_PERSIST_DELAY = 3000;
-const LOG_PERSIST_MAX_DELAY = 15000;
+// The whole buffer is rewritten on each save: keep saves infrequent.
+const LOG_PERSIST_DELAY = 10000;
+const LOG_PERSIST_MAX_DELAY = 60000;
 const LOG_STORAGE_KEY_PREFIX = 'tst-debug-log:';
 
 function pushLogLine(line) {

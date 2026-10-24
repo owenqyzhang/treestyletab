@@ -22,6 +22,8 @@ import {
   waitUntilStartupOperationsUnblocked,
 } from '/common/common.js';
 import * as ApiTabs from '/common/api-tabs.js';
+import { IS_CHROME } from '/common/browser-compat.js';
+import * as StaleCode from '/common/stale-code.js';
 import * as Bookmark from '/common/bookmark.js';
 import * as BrowserTheme from '/common/browser-theme.js';
 import * as Color from '/common/color.js';
@@ -288,6 +290,16 @@ export async function init() {
   log('Start queuing of messages from the background page');
   BackgroundConnection.connect();
   const [importedWindow] = await promisedResults;
+  // This page always runs the files on disk; the service worker may not.
+  if (IS_CHROME &&
+      Array.isArray(importedWindow?.tabs) && // a real export, not a failed handshake
+      importedWindow.buildId != StaleCode.BUILD_ID &&
+      await StaleCode.reloadForStaleCode({
+        running: importedWindow?.buildId || '(unknown)',
+        disk:    StaleCode.BUILD_ID,
+        reason:  `sidebar of window ${mTargetWindow} found the background running outdated code`,
+      }))
+    return;
 
   // we don't need await for these features
   MetricsData.addAsync('API for other addons', TSTAPI.initAsFrontend());

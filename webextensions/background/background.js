@@ -27,6 +27,7 @@ import * as TabsUpdate from '/common/tabs-update.js';
 import * as TSTAPI from '/common/tst-api.js';
 import * as UniqueId from '/common/unique-id.js';
 import { getDarkModeMediaQuery } from '/common/compat-media.js';
+import * as StaleCode from '/common/stale-code.js';
 import '/common/bookmark.js'; // we need to load this once in the background page to register the global listener
 
 import MetricsData from '/common/MetricsData.js';
@@ -129,6 +130,8 @@ const promisedRestored = UniqueId.ensurePersistentIdRestored(tab => { // this mu
 export async function init() {
   log('init: start');
   MetricsData.add('init: start');
+  if (IS_CHROME)
+    reloadIfCodeIsStale();
   if (typeof window != 'undefined') // there is no unload event in the Chrome MV3 service worker
     window.addEventListener('pagehide', destroy, { once: true });
 
@@ -227,6 +230,19 @@ export async function init() {
   await MetricsData.addAsync('init: exporting tabs to sidebars', notifyReadyToSidebars());
 
   log(`Startup metrics for ${TabsStore.tabs.size} tabs: `, MetricsData.toString());
+}
+
+// See common/stale-code.js: Chrome may have started this service worker from
+// its stored copy of an older version of the scripts.
+async function reloadIfCodeIsStale() {
+  const disk = await StaleCode.readBuildIdOnDisk().catch(_error => null);
+  if (disk &&
+      disk != StaleCode.BUILD_ID)
+    StaleCode.reloadForStaleCode({
+      running: StaleCode.BUILD_ID,
+      disk,
+      reason:  'service worker started with outdated code',
+    });
 }
 
 async function notifyReadyToSidebars() {

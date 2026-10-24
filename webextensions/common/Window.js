@@ -14,6 +14,7 @@ import {
 } from './common.js';
 
 import * as TabsStore from './tabs-store.js';
+import { BUILD_ID } from './build-id.js';
 
 function log(...args) {
   internalLogger('common/Window', ...args);
@@ -393,6 +394,7 @@ export default class Window {
       tabs,
       tabGroups:  [...this.tabGroups.values()].map(group => group.$TST.sanitized),
       generation: TabsStore.getStoreGeneration(),
+      buildId:    BUILD_ID, // lets a sidebar notice a stale service worker
     };
   }
 }
