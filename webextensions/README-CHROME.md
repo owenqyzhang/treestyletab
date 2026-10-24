@@ -62,6 +62,13 @@ default branch; `manifest.firefox.json` preserves the original manifest.
   and tab/tree breadcrumbs (`[onReplaced]`, `[reload]`, `[structure]`,
   `[attach]`, `[detach]`, ...) in `storage.local`, across service-worker
   restarts. Run `dumpCrashLog()` in the service worker console.
+  Independently of `debug` (no console spam, no outlines in the sidebar),
+  every internal log line of the background and each sidebar is kept in a
+  bounded buffer mirrored to `storage.local` (`recordDebugLog`, on by
+  default). In the service worker console, `copy(await dumpDebugLogs())`
+  copies all of it (options: `{ last: 500, grep: 'text' }`), and
+  `copy(await dumpTreeState())` compares Chrome's tabs, the background's tree
+  and each open sidebar row by row, marking disagreements with `!!`.
 
 ## Known limitations on Chrome
 

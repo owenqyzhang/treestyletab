@@ -611,6 +611,10 @@ export const configs = new Configs({
 
 
   debug:                  false,
+  // Keep every log() line (all modules) in a bounded buffer mirrored to
+  // storage.local, without printing to the console and without the visual
+  // aids of "debug". Read with dumpDebugLogs() in the service worker console.
+  recordDebugLog:         true,
   blockStartupOperations: false, // to collect performance profile around the initialization process
   runTestsParameters:     '',
   syncEnabled:            true,
@@ -715,8 +719,15 @@ browser.storage.sync.remove(localKeys);
 configs.$loaded.then(() => {
   EventListenerManager.debug = configs.debug;
   log.forceStore = false;
-  if (!configs.debug)
+  log.recording = !!configs.recordDebugLog;
+  if (!configs.debug && !log.recording)
     log.logs = [];
+  if (log.recording)
+    restoreRecordedLogs();
+});
+configs.$addObserver(key => {
+  if (key == 'recordDebugLog')
+    log.recording = !!configs.recordDebugLog;
 });
 
 
@@ -812,38 +823,149 @@ export function shouldApplyAnimation(configOnly = false) {
 }
 
 
+const LOG_LINE_MAX_LENGTH = 600;
+// Recorded lines that would crowd out the useful ones: menu registration on
+// every service worker start, per-message traces, and storage notifications
+// for bulk data (including the recorder's own, which would loop forever).
+const RECORDING_NOISE = new RegExp([
+  /_onChanged\s+"local", \["(tst-debug-log:|tst-crash-log|treestyletab:compat-sessions:)/,
+  /^\S+ background\/browser-action-menu: create: /,
+  /^\S+ background\/tab-context-menu: (TSTAPI\.kCONTEXT_MENU_CREATE|tab-context-menu: internally called)/,
+  /^\S+ common\/common: Configs\[[^\]]+\] onMessage: /,
+].map(pattern => pattern.source).join('|'));
+
 export function log(module, ...args) {
   const isModuleLog = module in configs.$default.logFor;
   const message    = isModuleLog ? args.shift() : module ;
   const useConsole = configs?.debug && (!isModuleLog || configs.logFor[module]);
-  const logging    = useConsole || log.forceStore;
+  const logging    = useConsole || log.forceStore || log.recording;
   if (!logging)
     return;
 
   args = args.map(arg => typeof arg == 'function' ? arg() : arg);
 
-  const nest = (new Error()).stack.split('\n').length;
-  const indent = ' '.repeat(nest);
   if (isModuleLog)
     module = `${module}: `
   else
     module = '';
 
+  if (!useConsole) { // recording only: keep it cheap and bounded
+    const line = `${getTimeStamp()} ${module}${message} ${args.map(compactUneval).join(', ')}`;
+    // Storage change notifications for the recorder's own data (and other
+    // non-config bulk data) would feed back into the log forever.
+    if (RECORDING_NOISE.test(line))
+      return;
+    pushLogLine(line.length > LOG_LINE_MAX_LENGTH ? `${line.slice(0, LOG_LINE_MAX_LENGTH)}…` : line);
+    return;
+  }
+
+  const nest = (new Error()).stack.split('\n').length;
+  const indent = ' '.repeat(nest);
   const timestamp = configs.logTimestamp ? `${getTimeStamp()} ` : '';
   const line = `tst<${log.context}>: ${timestamp}${module}${indent}${message}`;
-  if (useConsole)
-    console.log(line, ...args);
+  console.log(line, ...args);
 
-  log.logs.push(`${line} ${args.reduce((output, arg, index) => {
+  pushLogLine(`${line} ${args.reduce((output, arg, index) => {
     output += `${index == 0 ? '' : ', '}${uneval(arg)}`;
     return output;
   }, '')}`);
-  log.logs = log.logs.slice(-log.max);
 }
 log.context = '?';
-log.max  = 2000;
+log.max  = 4000;
 log.logs = [];
 log.forceStore = true;
+log.recording = false;
+
+const LOG_PERSIST_DELAY = 3000;
+const LOG_PERSIST_MAX_DELAY = 15000;
+const LOG_STORAGE_KEY_PREFIX = 'tst-debug-log:';
+
+function pushLogLine(line) {
+  log.logs.push(line);
+  if (log.logs.length > log.max)
+    log.logs.splice(0, log.logs.length - log.max);
+  if (log.recording)
+    reservePersistLogs();
+}
+
+// Tabs and other tree items are cyclic and huge; log them by id.
+function compactUneval(value) {
+  if (value && typeof value == 'object') {
+    if (value.$TST && 'id' in value)
+      return `#${value.id}`;
+    if (Array.isArray(value) && value.some(item => item?.$TST))
+      return `[${value.map(compactUneval).join(',')}]`;
+  }
+  const text = uneval(value);
+  return text.length > 300 ? `${text.slice(0, 300)}…` : text;
+}
+
+function logStorageKey() {
+  return `${LOG_STORAGE_KEY_PREFIX}${log.context}`;
+}
+
+let mPersistLogsTimer = null;
+let mPersistLogsFirstReservedAt = 0;
+function reservePersistLogs() {
+  const now = Date.now();
+  if (!mPersistLogsTimer)
+    mPersistLogsFirstReservedAt = now;
+  else if (now - mPersistLogsFirstReservedAt < LOG_PERSIST_MAX_DELAY)
+    clearTimeout(mPersistLogsTimer);
+  else
+    return; // a write is due soon anyway
+  mPersistLogsTimer = setTimeout(persistLogs, LOG_PERSIST_DELAY);
+}
+
+function persistLogs() {
+  mPersistLogsTimer = null;
+  if (log.context.endsWith('?')) // not identified yet: don't overwrite another context's log
+    return;
+  browser.storage.local.set({
+    [logStorageKey()]: { savedAt: Date.now(), lines: log.logs },
+  }).catch(_error => {});
+}
+
+// Logs survive service worker restarts and sidebar reloads.
+async function restoreRecordedLogs() {
+  while (log.context.endsWith('?')) { // the sidebar learns its window later
+    await wait(500);
+  }
+  try {
+    const key = logStorageKey();
+    const stored = (await browser.storage.local.get(key))[key];
+    if (Array.isArray(stored?.lines) && stored.lines.length > 0) {
+      log.logs.unshift(...stored.lines, `----- ${log.context} restarted at ${new Date().toISOString()} (previous instance above) -----`);
+      if (log.logs.length > log.max)
+        log.logs.splice(0, log.logs.length - log.max);
+    }
+  }
+  catch(_error) {
+  }
+}
+
+// Collects the recorded logs of all contexts (background, sidebars, options)
+// plus the crash log. Use `copy(await dumpDebugLogs())` in the service worker
+// console to put everything into the clipboard.
+export async function dumpDebugLogs({ last = 0, grep = null } = {}) {
+  persistLogs();
+  const stored = await browser.storage.local.get(null);
+  const sections = [];
+  for (const [key, value] of Object.entries(stored)) {
+    if (!key.startsWith(LOG_STORAGE_KEY_PREFIX) || !Array.isArray(value?.lines))
+      continue;
+    let lines = key == logStorageKey() ? log.logs : value.lines;
+    if (grep)
+      lines = lines.filter(line => line.includes(grep));
+    if (last > 0)
+      lines = lines.slice(-last);
+    sections.push(`===== ${key.slice(LOG_STORAGE_KEY_PREFIX.length)} (saved ${new Date(value.savedAt).toISOString()}) =====\n${lines.join('\n')}`);
+  }
+  const crash = stored['tst-crash-log']?.entries;
+  if (Array.isArray(crash))
+    sections.push(`===== crash log =====\n${crash.join('\n')}`);
+  return sections.join('\n\n');
+}
 
 export function stack(givenStack) {
   if (!configs.debug)
@@ -888,7 +1010,7 @@ function getTimeStamp() {
 }
 
 export function dumpTab(tab) {
-  if (!configs || !configs.debug)
+  if (!configs || !(configs.debug || log.recording))
     return '';
   if (!tab)
     return '<NULL>';

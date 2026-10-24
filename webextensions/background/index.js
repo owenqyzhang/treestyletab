@@ -9,7 +9,8 @@ import CrossContextMessaging from '/extlib/cross-context-messaging-bg.js';
 
 import {
   log,
-  configs
+  configs,
+  dumpDebugLogs,
 } from '/common/common.js';
 import * as SidebarConnection from '/common/sidebar-connection.js';
 import * as TabsStore from '/common/tabs-store.js';
@@ -49,6 +50,53 @@ globalThis.dumpMetricsData = () => {
 };
 globalThis.dumpLogs = () => {
   return log.logs.join('\n');
+};
+globalThis.dumpDebugLogs = dumpDebugLogs;
+
+// Compares, per window, Chrome's native tabs, the background's tree and what
+// each open sidebar shows. Rows marked "!!" disagree.
+// Usage: copy(await dumpTreeState())
+globalThis.dumpTreeState = async () => {
+  const out = [];
+  const windows = await browser.windows.getAll({ populate: true, windowTypes: ['normal'] });
+  for (const win of windows) {
+    const sidebar = await browser.runtime.sendMessage({
+      type:     'treestyletab:debug-dump-sidebar-state',
+      windowId: win.id,
+    }).catch(_error => null);
+    const sidebarById = new Map((sidebar?.tabs || []).map(tab => [tab.id, tab]));
+    const tracked = Tab.getAllTabs(win.id);
+    const trackedById = new Map(tracked.map(tab => [tab.id, tab]));
+    out.push(`===== window ${win.id}: native ${win.tabs.length}, background ${tracked.length}, sidebar ${sidebar ? sidebar.tabs.length : '(closed)'} =====`);
+    for (const nativeTab of win.tabs) {
+      const tab = trackedById.get(nativeTab.id);
+      const row = sidebarById.get(nativeTab.id);
+      const problems = [];
+      if (!tab)
+        problems.push('not tracked');
+      else if (tab.index != nativeTab.index)
+        problems.push(`bg index ${tab.index}`);
+      if (sidebar && !row)
+        problems.push('no sidebar row');
+      else if (row && tab && row.parent != (tab.$TST.parentId || null))
+        problems.push(`sidebar parent ${row.parent}`);
+      if (row && row.title != nativeTab.title)
+        problems.push(`sidebar title "${row.title}"`);
+      out.push(`${problems.length ? '!!' : '  '} ${String(nativeTab.index).padStart(3)} #${nativeTab.id} parent=${tab?.$TST.parentId || '-'}${nativeTab.pinned ? ' pinned' : ''}${nativeTab.discarded ? ' discarded' : ''} ${nativeTab.status} "${nativeTab.title}"${problems.length ? '  <- ' + problems.join('; ') : ''}`);
+    }
+    const nativeIds = new Set(win.tabs.map(tab => tab.id));
+    for (const tab of tracked) {
+      if (!nativeIds.has(tab.id))
+        out.push(`!! tracked by the background but not native: #${tab.id} "${tab.title}" index ${tab.index}`);
+    }
+    for (const row of (sidebar?.tabs || [])) {
+      if (!nativeIds.has(row.id))
+        out.push(`!! shown in the sidebar but not native: #${row.id} "${row.title}" at row ${row.row}`);
+    }
+    if (sidebar && sidebar.order.join() != win.tabs.map(tab => tab.id).join())
+      out.push(`!! sidebar row order differs from native order`);
+  }
+  return out.join('\n');
 };
 
 // for old debugging method

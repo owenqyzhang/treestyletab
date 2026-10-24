@@ -1327,6 +1327,18 @@ function onMessage(message, _sender, _respond) {
     case Constants.kCOMMAND_PING_TO_SIDEBAR:
       return Promise.resolve(true);
 
+    // see dumpTreeState() in background/index.js
+    case 'treestyletab:debug-dump-sidebar-state': {
+      const rows = [...document.querySelectorAll('tab-item')];
+      const tabs = Tab.getAllTabs(mTargetWindow).map(tab => ({
+        id:     tab.id,
+        parent: tab.$TST.parentId || null,
+        title:  tab.title,
+        row:    rows.indexOf(tab.$TST.element),
+      }));
+      return Promise.resolve({ tabs, order: tabs.map(tab => tab.id) });
+    }
+
     case Constants.kCOMMAND_RELOAD:
       if (isStaleReloadRequest(message)) {
         log('ignore reload command for an already imported tree: ', message.generation, mImportedGeneration);
