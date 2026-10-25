@@ -1260,7 +1260,7 @@ async function onConfigChange(changedKey) {
       const tooltipExtra = (() => {
         switch (configs.longPressOnNewTabButton) {
           case Constants.kCONTEXTUAL_IDENTITY_SELECTOR:
-            return browser.i18n.getMessage('tabbar_newTabButton_tooltip_container');
+            return IS_CHROME ? '' : browser.i18n.getMessage('tabbar_newTabButton_tooltip_container');
           case Constants.kNEWTAB_ACTION_SELECTOR:
             return browser.i18n.getMessage('tabbar_newTabButton_tooltip_newtabaction');
           default:

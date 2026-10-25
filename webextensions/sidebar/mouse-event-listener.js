@@ -40,6 +40,7 @@ import {
   stack,
 } from '/common/common.js';
 import * as ApiTabs from '/common/api-tabs.js';
+import { IS_CHROME } from '/common/browser-compat.js';
 import * as Constants from '/common/constants.js';
 import * as Permissions from '/common/permissions.js';
 import * as RetrieveURL from '/common/retrieve-url.js';
@@ -109,6 +110,8 @@ Sidebar.onBuilt.addListener(async () => {
     // of which code path triggered the open() call.
     const openContextualIdentitySelector = mContextualIdentitySelector.ui.open.bind(mContextualIdentitySelector.ui);
     mContextualIdentitySelector.ui.open = async (...args) => {
+      if (IS_CHROME) // no containers: the menu would be empty
+        return;
       await Sidebar.updateContextualIdentitiesSelector();
       return openContextualIdentitySelector(...args);
     };
@@ -602,7 +605,8 @@ async function handleDefaultMouseUp({ lastMousedown, tab, event }) {
       if (event.shiftKey && !lastMousedown.detail.isAccelClick) {
         browser.windows.create({});
       }
-      else if (configs.inheritContextualIdentityToNewTabMode == Constants.kCONTEXTUAL_IDENTITY_SELECT_FOR_EACH) {
+      else if (!IS_CHROME && // the mode can still come from an imported Firefox config
+               configs.inheritContextualIdentityToNewTabMode == Constants.kCONTEXTUAL_IDENTITY_SELECT_FOR_EACH) {
         mContextualIdentitySelector.ui.open({
           left: event.clientX,
           top:  event.clientY,

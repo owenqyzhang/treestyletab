@@ -104,6 +104,8 @@ Tab.onRemoving.addListener(async (tab, removeInfo = {}) => {
       catch(error) {
         // The closing tab must be detached below even if detaching children failed.
         console.error(error);
+        // caught, so the crash recorder would not see it otherwise
+        globalThis.__treestyletabBreadcrumb?.('ERROR', `detachAllChildren failed for closing tab ${tab.id}: ${error?.stack || error}`); // eslint-disable-line no-underscore-dangle
       }
     }
     else {
