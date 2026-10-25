@@ -103,11 +103,12 @@
                        size="24"></label></p>
       <p class="sub">__MSG_config_sidebarFont_description__</p>
     </fieldset>
-    <p><label class="has-checkbox"
+    <!-- Chrome: there are no browser themes for extensions to follow -->
+    <p class="firefox-only"><label class="has-checkbox"
              ><input id="applyBrowserThemeColors"
                      type="checkbox">
              __MSG_config_applyBrowserThemeColors_label__</label></p>
-    <p class="sub">__MSG_config_applyBrowserThemeColors_description__</p>
+    <p class="sub firefox-only">__MSG_config_applyBrowserThemeColors_description__</p>
     <p><label class="has-checkbox"
              ><input id="animation"
                      type="checkbox">
@@ -190,7 +191,8 @@
                      type="checkbox">
              __MSG_config_showCollapsedDescendantsByLegacyTooltipOnSidebar_label__</label></p>
     </div>
-    <p><label class="has-checkbox"
+    <p class="firefox-only"
+      ><label class="has-checkbox"
              ><input id="browserSettingsPermissionGranted_toolbarIconColor"
                      type="checkbox">
              __MSG_config_requestPermissions_browserSettings__</label></p>
@@ -1634,7 +1636,7 @@
       <li><a id="link-startupPage" target="_blank">__MSG_config_link_startupPage_label__</a></li>
       <li><a id="link-groupPage" target="_blank">__MSG_config_link_groupPage_label__</a></li>
       <li><a id="link-tabbarPage" target="_blank">__MSG_config_link_tabbarPage_label__</a></li>
-      <li><a id="link-manageContainersPage" target="_blank">__MSG_config_link_manageContainersPage_label__</a></li>
+      <li class="firefox-only"><a id="link-manageContainersPage" target="_blank">__MSG_config_link_manageContainersPage_label__</a></li>
       <li><a id="link-runTests" target="_blank">__MSG_config_runTests_label__</a>
           <label>__MSG_config_runTestsParameters_label__<input id="runTestsParameters" type="text" size="30"></label></li>
       <li><a id="link-runBenchmark" target="_blank">__MSG_config_runBenchmark_label__</a>

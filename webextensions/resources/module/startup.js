@@ -7,7 +7,7 @@
 
 // must be imported first: installs the `browser` global on Chrome
 // (startup.html does not load it by itself)
-import '/common/browser-compat.js';
+import { IS_CHROME } from '/common/browser-compat.js';
 
 import '/extlib/l10n.js';
 
@@ -56,10 +56,13 @@ window.addEventListener('DOMContentLoaded', () => {
     document.querySelector('#clipboardReadPermissionGranted')
   );
   document.querySelector('#clipboardReadPermissionGranted').style.display = configs.middleClickPasteURLOnNewTabButton ? 'none' : '';
-  Permissions.bindToCheckbox(
-    Permissions.BROWSER_SETTINGS,
-    document.querySelector('#browserSettingsPermissionGranted')
-  );
+  if (IS_CHROME) // browserSettings is a Firefox-only permission
+    document.querySelector('#browserSettingsPermissionGranted').closest('li').style.display = 'none';
+  else
+    Permissions.bindToCheckbox(
+      Permissions.BROWSER_SETTINGS,
+      document.querySelector('#browserSettingsPermissionGranted')
+    );
 
   document.documentElement.classList.add('initialized');
 }, { once: true });

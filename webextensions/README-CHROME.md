@@ -101,11 +101,31 @@ their changes under the port:
 
     git sync-upstream
 
-(a repo-local alias: fetches upstream, fast-forwards `trunk`, pushes it to
-the fork, and rebases `chrome-port` onto it). On conflicts, resolve and
-`git rebase --continue`. Afterwards re-verify (reload the unpacked
-extension; re-run `node tools/inline-mask-images.mjs` if upstream added
-masked icons) and `git push --force-with-lease origin chrome-port`.
+(a repo-local alias: fetches upstream, fast-forwards `trunk` without
+checking it out, pushes it to the fork, and rebases a `chrome-port-sync`
+copy of `chrome-port` onto it in the worktree `../treestyletab-sync`, with
+hooks disabled so that the replayed commits keep their build ids). Never
+rebase in the checkout Chrome loads the unpacked extension from: the
+sidebar and options pages load files from disk whenever they open, so a
+half-rebased tree (or `trunk`, i.e. the Firefox version) breaks the
+running extension. On conflicts, resolve in the worktree and
+`git -c core.hooksPath=/dev/null rebase --continue`:
+
+- `_locales/*/messages.json`: take upstream's files and run
+  `node tools/normalize-locales.mjs`, which redoes the port's
+  normalization (Chrome only accepts `[a-zA-Z0-9_@]` in message names and
+  requires declared placeholders).
+- `extlib/`: the port vendors patched copies. When upstream bumps a
+  submodule, merge its change into the vendored file with
+  `git merge-file extlib/<file> <old submodule file> <new submodule file>`.
+- Masked icons: re-run `node tools/inline-mask-images.mjs`.
+
+Then adapt new upstream features in a normal commit (the pre-commit hook
+stamps a new build id, so running Chrome instances reload the extension
+once), run `make lint`, verify the worktree's `webextensions/` loaded
+unpacked in a separate Chrome profile, and only then move the live
+checkout over with `git reset --hard chrome-port-sync` (on `chrome-port`)
+and `git push --force-with-lease origin chrome-port`.
 
 ## Development
 

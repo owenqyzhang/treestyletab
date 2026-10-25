@@ -1474,7 +1474,7 @@ tab-item[type="group-collapsed-members-counter"] {
   }
   :root.simulate-svg-context-fill & .label::before {
     background: var(--tab-text);
-    mask: url("./icons/plus.svg#proton") no-repeat center / 100%;
+    mask: url("data:image/svg+xml,%3Csvg width=%2216%22 height=%2216%22 xmlns=%22http://www.w3.org/2000/svg%22 fill=%22black%22 %3E %3Cstyle%3E g:not(%5Bid=%22proton%22%5D) %7B display: none%3B %7D %3C/style%3E %3Cg id=%22proton%22%3E %3Cpath d=%22M7 9.75 7 14a.625.625 0 0 0 1.25 0l0-4.25.5-.5 4.25 0A.625.625 0 0 0 13 8L8.75 8l-.5-.5 0-4.25a.625.625 0 0 0-1.25 0L7 7.5l-.5.5-4.25 0a.625.625 0 0 0 0 1.25l4.137 0z%22/%3E %3C/g%3E %3Cg id=%22nova%22%3E %3Cpath d=%22M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2%22 /%3E %3C/g%3E %3C/svg%3E") no-repeat center / 100%;
   }
 
   &:hover::before {

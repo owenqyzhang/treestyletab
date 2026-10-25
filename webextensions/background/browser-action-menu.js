@@ -97,9 +97,10 @@ const mItems = [
         ]
       },
       {
-        title: browser.i18n.getMessage('config_applyBrowserThemeColors_label'),
-        key:   'applyBrowserThemeColors',
-        type:  'checkbox'
+        title:   browser.i18n.getMessage('config_applyBrowserThemeColors_label'),
+        key:     'applyBrowserThemeColors',
+        type:    'checkbox',
+        visible: IS_FIREFOX,
       },
       {
         title: browser.i18n.getMessage('config_animation_label'),
@@ -175,7 +176,8 @@ const mItems = [
       {
         title:       browser.i18n.getMessage('config_requestPermissions_browserSettings'),
         type:        'checkbox',
-        permissions: Permissions.BROWSER_SETTINGS
+        permissions: Permissions.BROWSER_SETTINGS,
+        visible:     IS_FIREFOX,
       },
       {
         dynamicTitle: true,

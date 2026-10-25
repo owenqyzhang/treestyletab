@@ -635,7 +635,10 @@ function reloadAllMaskImages() {
 
 
 export async function updateContextualIdentitiesSelector() {
-  const disabled = document.documentElement.classList.contains('incognito');
+  const disabled = (
+    document.documentElement.classList.contains('incognito') ||
+    IS_CHROME // no containers to choose, create or manage on Chrome
+  );
 
   const anchors = document.querySelectorAll(`.${Constants.kCONTEXTUAL_IDENTITY_SELECTOR}-marker`);
   for (const anchor of anchors) {

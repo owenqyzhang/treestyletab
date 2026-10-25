@@ -28,8 +28,14 @@ function collect(dir) {
 for (const dir of ['sidebar', 'resources', 'options', 'background'])
   collect(path.join(root, dir));
 
-function toDataUri(svgPath) {
+function toDataUri(svgPath, fragment = '') {
   let svg = fs.readFileSync(svgPath, 'utf8');
+  if (fragment) {
+    // Multi-variant icons ("icon.svg#variant") show the element matching
+    // :target. Resolve that statically instead of relying on fragment
+    // identifiers of data: URIs.
+    svg = svg.replace(/:target\b/g, `[id="${fragment}"]`);
+  }
   svg = svg
     .replace(/<!--[\s\S]*?-->/g, '')
     // Chrome resolves the Firefox-only context-fill/context-stroke paints
@@ -54,7 +60,7 @@ for (const cssFile of cssFiles) {
   const updated = original.split('\n').map(line => {
     if (!/(?:^|[^a-z-])(?:-webkit-)?mask(?:-image)?\s*:/.test(line))
       return line;
-    return line.replace(/url\(\s*(["']?)([^"')]+\.svg)\1\s*\)/g, (whole, _quote, ref) => {
+    return line.replace(/url\(\s*(["']?)([^"'#)]+\.svg)(?:#([^"')]+))?\1\s*\)/g, (whole, _quote, ref, fragment) => {
       if (ref.startsWith('data:'))
         return whole;
       const resolved = ref.startsWith('/') ?
@@ -65,7 +71,7 @@ for (const cssFile of cssFiles) {
         return whole;
       }
       replacedInFile++;
-      return `url("${toDataUri(resolved)}")`;
+      return `url("${toDataUri(resolved, fragment)}")`;
     });
   }).join('\n');
   if (replacedInFile > 0) {

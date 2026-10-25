@@ -321,7 +321,7 @@ class RichConfirm {
       (/^Mac/i.test(navigator.platform) &&
        ownerWin.state == 'fullscreen')
     );
-    let dialogFullUrl, simulatedSize;
+    let dialogFullUrl, dimensionParams;
 
     // on macOS, a popup window opened from a fullscreen browser window is always
     // opened as a new fullscreen window, thus we need to fallback to a workaround.
@@ -331,14 +331,24 @@ class RichConfirm {
     else {
       dialogFullUrl = `${this.dialogHtmlPath}?__RichConfirm__=1&uniqueKey=${encodeURIComponent(uniqueKey)}&oneTimeKey=${encodeURIComponent(oneTimeKey)}&params=${encodeURIComponent(JSON.stringify({...params, ownerWindowId: ownerWin.id, tab: false, popup: true}))}`;
 
-      if (typeof document == 'undefined') {
+      // If the caller explicitly gives both width and height, skip the
+      // automatic size calculation (which needs a hidden "simulation" run
+      // of the dialog to measure its natural size) and use the given
+      // values as-is.
+      if (typeof params.width == 'number' && typeof params.height == 'number') {
+        dimensionParams = {
+          width:  params.width,
+          height: params.height,
+        };
+      }
+      else if (typeof document == 'undefined') {
         // Running in a service worker (Chrome MV3): there is no DOM to
         // simulate the dialog with, and no "screen", so we use an estimated
         // size based on the owner window. The opened dialog page reports its
         // own size and is repositioned/resized via the
         // DIALOG_READY_NOTIFICATION_TYPE => _tryRepositionDialogToCenterOfOwner
         // message afterward.
-        simulatedSize = {
+        dimensionParams = {
           width:  Math.min(ownerWin.width, Math.max(480, Math.ceil(ownerWin.width / 2))),
           height: Math.min(ownerWin.height, Math.max(320, Math.ceil(ownerWin.height / 2))),
         };
@@ -378,15 +388,22 @@ class RichConfirm {
         const simulatedRect   = simulatedDialog.getBoundingClientRect();
 
         const safetyFactor  = 1.05;
-        simulatedSize = {
+        dimensionParams = {
           width:  Math.ceil(simulatedRect.width * safetyFactor),
           height: Math.ceil(simulatedRect.height * safetyFactor)
         };
         simulation.hide();
       }
 
-      simulatedSize.top  = ownerWin.top + Math.floor((ownerWin.height - simulatedSize.height) / 2);
-      simulatedSize.left = ownerWin.left + Math.floor((ownerWin.width - simulatedSize.width) / 2);
+      // Position: honor explicit left/top if given, otherwise center the
+      // dialog on the owner window (as before). This is independent of
+      // whether width/height were explicitly given or auto-calculated.
+      dimensionParams.top = typeof params.top == 'number' ?
+        params.top :
+        ownerWin.top + Math.floor((ownerWin.height - dimensionParams.height) / 2);
+      dimensionParams.left = typeof params.left == 'number' ?
+        params.left :
+        ownerWin.left + Math.floor((ownerWin.width - dimensionParams.width) / 2);
     }
 
     const playgroundUrl = shouldPreventRestoration ? 'about:blank' : dialogFullUrl;
@@ -477,7 +494,7 @@ class RichConfirm {
       win = await this._safeCreateWindow({
         url:  playgroundUrl,
         type: 'popup',
-        ...simulatedSize,
+        ...dimensionParams,
       });
       // Due to a Firefox's bug we cannot open popup type window
       // at specified position.
@@ -491,8 +508,8 @@ class RichConfirm {
         // So, I grudgingly accept the position of the dialog placed
         // if the popup (partially or fully) covers the owner window.
         browser.windows.update(win.id, {
-          top:  simulatedSize.top,
-          left: simulatedSize.left
+          top:  dimensionParams.top,
+          left: dimensionParams.left
         });
       }
       playgroundTab = win.tabs.find(tab => tab.active);

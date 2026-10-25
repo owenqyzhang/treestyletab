@@ -656,7 +656,7 @@
       --button-background-color-destructive-disabled: var(--button-background-color-primary-disabled);
       --button-background-color-ghost: ButtonFace;
       --button-background-color-menu: Menu;
-      --button-background-color-menu-hover: -moz-menuhover;
+      --button-background-color-menu-hover: SelectedItem;
       --button-background-color-menu-active: var(--button-background-color-menu-hover);
       --button-background-color-menu-selected: var(--button-background-color-primary-selected);
       --button-background-color-primary: ButtonText;
@@ -687,7 +687,7 @@
       --button-text-color-ghost-hover: var(--button-text-color-hover);
       --button-text-color-ghost-active: var(--button-text-color-active);
       --button-text-color-menu: MenuText;
-      --button-text-color-menu-hover: -moz-menuhovertext;
+      --button-text-color-menu-hover: SelectedItemText;
       --button-text-color-menu-active: var(--button-text-color-menu-hover);
       --button-text-color-menu-selected: var(--button-text-color-primary-selected);
       --button-text-color-primary: ButtonFace;
@@ -1121,7 +1121,7 @@
       --button-text-color-destructive-selected: var(--button-text-color-destructive-active);
       --button-text-color-ghost-hover: var(--button-text-color-ghost-active);
       --button-text-color-ghost-selected: var(--button-text-color-selected);
-      --button-text-color-menu-hover: -moz-menuhovertext;
+      --button-text-color-menu-hover: SelectedItemText;
       --button-text-color-menu-disabled: var(--button-text-color-disabled);
       --button-text-color-menu-selected: var(--button-text-color-primary-selected);
       --button-text-color-muted: ButtonText;

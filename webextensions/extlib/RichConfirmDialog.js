@@ -32,7 +32,7 @@ class RichConfirmDialog {
           p ul ol li pre
           h1 h2 h3 h4 h5 h6
           table thead tbody tr th td
-          form label input textarea select option button
+          form label input textarea select option button progress
           img audio video source
         `.trim().split(/\s+/),
         attributes: `
@@ -47,7 +47,9 @@ class RichConfirmDialog {
           href
           id
           lang
+          max
           method
+          min
           multiple
           name
           placeholder
@@ -56,6 +58,7 @@ class RichConfirmDialog {
           selected
           size
           src
+          step
           style
           target
           title
@@ -77,6 +80,9 @@ class RichConfirmDialog {
 
   get commonClass() {
     return `rich-confirm-${this.uniqueKey}`;
+  }
+  get userStylesScope() {
+    return `.${this.uniqueId}`;
   }
   get dialog() {
     return this.ui.querySelector('.rich-confirm-dialog');
@@ -577,6 +583,166 @@ class RichConfirmDialog {
     `;
   }
 
+  generateUserStyleDefinitions() {
+    const source = this.params.userStyles;
+    if (!source || typeof source != 'string')
+      return '';
+    return this.constructor.scopeCSS(source, this.userStylesScope);
+  }
+
+  // Rewrites every selector in the given CSS so that it can only match
+  // elements placed under (a descendant of) `scopeSelector`, to avoid
+  // leaking user-supplied styles to the rest of the host document. Known
+  // grouping at-rules (@media, @supports, @layer, @container, @scope) are
+  // scoped recursively; other at-rules (@keyframes, @font-face, @page,
+  // @import, ...) are passed through as-is, because their bodies are not
+  // selector lists.
+  static scopeCSS(cssText, scopeSelector) {
+    const GROUPING_AT_RULES = new Set(['media', 'supports', 'layer', 'container', 'scope']);
+
+    const splitTopLevel = (text, delimiter) => {
+      const parts = [];
+      let depth = 0;
+      let current = '';
+      for (const ch of text) {
+        if (ch == '(' || ch == '[')
+          depth++;
+        else if (ch == ')' || ch == ']')
+          depth--;
+        if (ch == delimiter && depth <= 0) {
+          parts.push(current);
+          current = '';
+        }
+        else {
+          current += ch;
+        }
+      }
+      parts.push(current);
+      return parts;
+    };
+
+    const scopeSelectorList = selectorText => splitTopLevel(selectorText, ',')
+      .map(part => part.trim())
+      .filter(part => part.length > 0)
+      .map(part => `${scopeSelector} ${part}`)
+      .join(', ');
+
+    const processBlock = css => {
+      let result = '';
+      let i = 0;
+      const n = css.length;
+      while (i < n) {
+        const chunkStart = i;
+        while (i < n && /\s/.test(css[i])) {
+          i++;
+        }
+        if (i >= n) {
+          result += css.slice(chunkStart, i);
+          break;
+        }
+        if (css[i] == '/' && css[i + 1] == '*') {
+          const end = css.indexOf('*/', i + 2);
+          const commentEnd = end == -1 ? n : end + 2;
+          result += css.slice(chunkStart, commentEnd);
+          i = commentEnd;
+          continue;
+        }
+        result += css.slice(chunkStart, i);
+
+        if (css[i] == '@') {
+          const atStart = i;
+          let j = i + 1;
+          while (j < n && /[a-zA-Z-]/.test(css[j])) {
+            j++;
+          }
+          const atName = css.slice(i + 1, j).toLowerCase();
+          let k = j;
+          let depth = 0;
+          let terminator = null;
+          while (k < n) {
+            const ch = css[k];
+            if (ch == '(')
+              depth++;
+            else if (ch == ')')
+              depth--;
+            else if (depth <= 0 && ch == ';') {
+              terminator = ';';
+              break;
+            }
+            else if (depth <= 0 && ch == '{') {
+              terminator = '{';
+              break;
+            }
+            k++;
+          }
+          if (terminator != '{') {
+            const end = k >= n ? n : k + 1;
+            result += css.slice(atStart, end);
+            i = end;
+            continue;
+          }
+          const prelude = css.slice(j, k);
+          let braceDepth = 1;
+          let m = k + 1;
+          while (m < n && braceDepth > 0) {
+            if (css[m] == '{')
+              braceDepth++;
+            else if (css[m] == '}')
+              braceDepth--;
+            if (braceDepth == 0)
+              break;
+            m++;
+          }
+          if (GROUPING_AT_RULES.has(atName)) {
+            const innerBlock = css.slice(k + 1, m);
+            result += `@${atName}${prelude}{${processBlock(innerBlock)}}`;
+          }
+          else {
+            result += css.slice(atStart, m + 1);
+          }
+          i = m + 1;
+          continue;
+        }
+
+        let k = i;
+        let depth = 0;
+        while (k < n) {
+          const ch = css[k];
+          if (ch == '(')
+            depth++;
+          else if (ch == ')')
+            depth--;
+          else if (depth <= 0 && ch == '{')
+            break;
+          k++;
+        }
+        if (k >= n) {
+          result += css.slice(i);
+          i = n;
+          break;
+        }
+        const selectorText = css.slice(i, k);
+        let braceDepth = 1;
+        let m = k + 1;
+        while (m < n && braceDepth > 0) {
+          if (css[m] == '{')
+            braceDepth++;
+          else if (css[m] == '}')
+            braceDepth--;
+          if (braceDepth == 0)
+            break;
+          m++;
+        }
+        const declarationBlock = css.slice(k + 1, m);
+        result += `${scopeSelectorList(selectorText)}{${declarationBlock}}`;
+        i = m + 1;
+      }
+      return result;
+    };
+
+    return processBlock(String(cssText));
+  }
+
   generateUI() {
     const commonClass = [
       this.commonClass,
@@ -619,8 +785,54 @@ class RichConfirmDialog {
     this.style.textContent = this.generateStyleDefinitions();
     document.head.appendChild(this.style);
 
+    const userStyles = this.generateUserStyleDefinitions();
+    if (userStyles) {
+      this.userStyle = document.createElement('style');
+      this.userStyle.setAttribute('type', 'text/css');
+      this.userStyle.textContent = userStyles;
+      document.head.appendChild(this.userStyle);
+    }
+
     await this.safeAppend(document.body, this.generateUI());
     this.ui = document.querySelector(`.rich-confirm.${this.commonClass}.${this.uniqueId}`);
+    this.applyCustomGeometry();
+  }
+
+  /**
+   * Apply optional explicit width/height/left/top (given via params) to
+   * the dialog box, for non-popup-window display modes (show()/showInTab()).
+   * In popup-window mode the dialog box always fills the whole popup
+   * window by CSS (flex-grow: 1), so explicit geometry there is instead
+   * handled at the OS window level by RichConfirm.showInPopup() (which
+   * passes width/height/left/top to browser.windows.create()).
+   */
+  applyCustomGeometry() {
+    if (this.params.popup || this.params.simulation)
+      return;
+
+    const dialog = this.dialog;
+    if (!dialog)
+      return;
+
+    if (typeof this.params.width == 'number')
+      dialog.style.width = `${this.params.width}px`;
+    if (typeof this.params.height == 'number')
+      dialog.style.height = `${this.params.height}px`;
+
+    if (typeof this.params.left == 'number' ||
+        typeof this.params.top == 'number') {
+      const row = this.ui.querySelector('.rich-confirm-row');
+      if (row) {
+        row.style.alignItems = 'flex-start';
+        row.style.justifyContent = 'flex-start';
+      }
+      dialog.style.position = 'fixed';
+      dialog.style.margin = '0';
+      if (typeof this.params.left == 'number')
+        dialog.style.left = `${this.params.left}px`;
+      if (typeof this.params.top == 'number')
+        dialog.style.top = `${this.params.top}px`;
+    }
   }
 
   getNextFocusedNodeByAccesskey(key) {
@@ -705,6 +917,10 @@ class RichConfirmDialog {
 
   async updateContent({ content, message }) {
     if (content) {
+      const range = document.createRange();
+      range.selectNodeContents(this.content);
+      range.deleteContents();
+      range.detach();
       await this.safeAppend(this.content, content);
       for (const element of this.content.querySelectorAll('[accesskey]')) {
         this.updateAccessKey(element);
@@ -845,13 +1061,17 @@ class RichConfirmDialog {
     delete this._rejecte;
     const ui = this.ui;
     const style = this.style;
+    const userStyle = this.userStyle;
     delete this.ui;
     delete this.style;
+    delete this.userStyle;
     return new Promise((resolve, _reject) => {
       window.setTimeout(() => {
         // remove elements after animation is finished
         ui.parentNode.removeChild(ui);
         style.parentNode.removeChild(style);
+        if (userStyle)
+          userStyle.parentNode.removeChild(userStyle);
       }, 1000);
       resolve();
     });
