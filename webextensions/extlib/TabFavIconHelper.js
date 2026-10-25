@@ -680,7 +680,15 @@ data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACGFjVEw
         return;
       }
       loader = new Image();
-      if (/^https?:/.test(favIconUrl))
+      // A CORS-mode request is only needed to read the pixels back through the
+      // canvas. Firefox lets extension pages do that for any site, but Chrome
+      // enforces CORS, so the load itself fails for almost every favicon
+      // (they carry no Access-Control-Allow-Origin) and the icon would be
+      // reported as broken. Without it the icon still loads; toDataURL() then
+      // throws on the tainted canvas, which is already handled below by using
+      // the plain URL.
+      if (/^https?:/.test(favIconUrl) &&
+          !/Chrome\//.test(navigator.userAgent))
         loader.crossOrigin = 'anonymous';
       loader.addEventListener('load', () => onLoad(), { once: true });
       loader.addEventListener('error', onError, { once: true });
