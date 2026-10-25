@@ -620,9 +620,14 @@ index = ${raw.index}
       }
 
       for (const state of NATIVE_PROPERTIES) {
-        if (raw[state] == classList.contains(state))
+        // Chrome tabs have no `attention`, so the value can be undefined. Treat
+        // that as false: classList.toggle(name, undefined) ignores the second
+        // argument and flips the class, so the row would blink "attention"
+        // (dot and bold label) on and off at every refresh.
+        const value = !!raw[state];
+        if (value == classList.contains(state))
           continue;
-        classList.toggle(state, raw[state]);
+        classList.toggle(state, value);
       }
 
       if (this.$TST.childIds.length > 0)
