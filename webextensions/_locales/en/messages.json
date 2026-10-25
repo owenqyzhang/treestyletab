@@ -1254,7 +1254,7 @@
     "message": "px vertically when the height of the sidebar header cannot be detected due to privacy protection (ex. \"privacy.resistFingerprinting\"=\"true\")"
   },
   "config_showCollapsedDescendantsByTooltip_label": {
-    "message": "Show collapsed descendants in the tooltip on a parent tab"
+    "message": "Show the tabs of a collapsed tree in its hover card (click one to switch to it)"
   },
   "config_showCollapsedDescendantsByLegacyTooltipOnSidebar_label": {
     "message": "and use legacy tooltip (can become wider than the sidebar) for that if needed"
