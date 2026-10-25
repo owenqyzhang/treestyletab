@@ -11,4 +11,5 @@
 
 import '/common/browser-compat.js';
 import '/common/crash-recorder.js'; // self-initializes on import
+import './expose-cross-context-messaging.js'; // must precede everything that registers handlers with it
 import './index.js';
