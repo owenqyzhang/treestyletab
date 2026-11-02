@@ -25,6 +25,16 @@ function log(...args) {
 
 export const internallyMovingNativeTabGroups = new Map();
 
+// Chrome reports group changes right away. The timeout only keeps a change
+// that never comes (a failed API call, or a tab TST believed to be in another
+// group) from blocking a drag & drop, and the sidebar with it, forever.
+const GROUP_CHANGE_TIMEOUT = 3000;
+
+function recordGroupFailure(detail) {
+  log(detail);
+  globalThis.__treestyletabBreadcrumb?.('groups', detail); // eslint-disable-line no-underscore-dangle
+}
+
 export async function addTabsToGroup(tabs, groupIdOrProperties) {
   const initialGroupId = typeof groupIdOrProperties == 'number' ? groupIdOrProperties : null;
   const groupId = await addTabsToGroupInternal(tabs, groupIdOrProperties);
@@ -64,16 +74,29 @@ async function addTabsToGroupInternal(tabs, groupIdOrProperties) {
     windowId,
   });
   log('addTabsToGroupInternal: group tabs!');
-  await browser.tabs.group({
-    tabIds: tabsToGrouped.map(tab => tab.id),
-    // "groupId: null" must not be sent: Chrome rejects null for the optional integer.
-    ...(groupId ? { groupId } : {
-      createProperties: {
-        windowId, // We must specify the window ID explicitly, otherwise tabs moved across windows may be reverted and grouped in the old window!
-      },
-    })
-  });
-  const group = await promisedGrouped;
+  try {
+    await browser.tabs.group({
+      tabIds: tabsToGrouped.map(tab => tab.id),
+      // "groupId: null" must not be sent: Chrome rejects null for the optional integer.
+      ...(groupId ? { groupId } : {
+        createProperties: {
+          windowId, // We must specify the window ID explicitly, otherwise tabs moved across windows may be reverted and grouped in the old window!
+        },
+      })
+    });
+  }
+  catch(error) {
+    finish();
+    recordGroupFailure(`failed to group tabs ${tabsToGrouped.map(tab => tab.id)} into ${groupId}: ${error}`);
+    throw error;
+  }
+  let group = await promisedGrouped;
+  if (!group) { // the change was not reported in time: ask Chrome
+    const actualGroupId = (await browser.tabs.get(tabsToGrouped[0].id).catch(_error => null))?.groupId;
+    group = actualGroupId > -1 && TabGroup.get(actualGroupId);
+    if (!group)
+      throw new Error(`addTabsToGroupInternal: tabs ${tabsToGrouped.map(tab => tab.id)} were not grouped`);
+  }
   groupId = group.id;
   log('addTabsToGroupInternal: => ', group);
 
@@ -161,10 +184,11 @@ function waitUntilGrouped(tabs, { groupId, windowId } = {}) {
   }
 
   let onUpdated = null;
+  let onGroupCreated = null;
   const { promisedMoved, finish: finishMoved } = waitUntilMoved(tabs, win.id)
   const promisedGrouped = new Promise((resolve, _reject) => {
     if (!groupId) {
-      const onGroupCreated = group => {
+      onGroupCreated = group => {
         groupId = group.id;
         browser.tabGroups.onCreated.removeListener(onGroupCreated);
       };
@@ -183,27 +207,40 @@ function waitUntilGrouped(tabs, { groupId, windowId } = {}) {
     browser.tabs.onUpdated.addListener(onUpdated, { properties: ['groupId'] });
   });
 
+  // Also used when the grouping fails: everything registered above must go,
+  // otherwise the next native move or group change of these tabs would be
+  // taken as TST's own and ignored.
   const finish = () => {
     if (finish.done) {
       return;
     }
     browser.tabs.onUpdated.removeListener(onUpdated);
+    if (onGroupCreated)
+      browser.tabGroups.onCreated.removeListener(onGroupCreated);
     for (const tab of tabs) {
       win.clearInternalMoving(tab.id);
+      win.internallyMovingTabsForUpdatedNativeTabGroups.delete(tab.id);
     }
+    finishMoved();
     finish.done = true;
   };
 
   return {
     promisedGrouped: Promise.all([
-      promisedGrouped,
+      Promise.race([
+        promisedGrouped,
+        wait(GROUP_CHANGE_TIMEOUT).then(() => {
+          if (!finish.done)
+            recordGroupFailure(`timed out waiting for tabs ${toBeGroupedIds} to be grouped into ${groupId}`);
+          return groupId;
+        }),
+      ]),
       Promise.race([
         promisedMoved,
         wait(configs.nativeTabGroupModificationDetectionTimeoutAfterTabMove),
       ]),
     ]).then(([groupId]) => {
       finish();
-      finishMoved();
       return TabGroup.get(groupId);
     }),
     finish,
@@ -216,13 +253,17 @@ export async function removeTabsFromGroup(tabs) {
     return;
   }
   const win = TabsStore.windows.get(tabs[0].windowId);
-  for (const tab of tabs) {
+  // Mark only the tabs which will be ungrouped: marks on the others would
+  // never be cleared, and their next native move would be ignored.
+  for (const tab of tabsToBeUngrouped) {
     win.internallyMovingTabsForUpdatedNativeTabGroups.add(tab.id);
     win.trackInternalMoving(tab.id, -1);
   }
   const toBeUngroupedIds = tabsToBeUngrouped.map(tab => tab.id);
   let onUpdated = null;
-  await new Promise((resolve, _reject) => {
+  let resolveUngrouped;
+  const promisedUngrouped = new Promise((resolve, _reject) => {
+    resolveUngrouped = resolve;
     const toBeUngroupedIdsSet = new Set(toBeUngroupedIds);
     onUpdated = (tabId, changeInfo, _tab) => {
       if (changeInfo.groupId == -1) {
@@ -234,10 +275,29 @@ export async function removeTabsFromGroup(tabs) {
       }
     };
     browser.tabs.onUpdated.addListener(onUpdated, { properties: ['groupId'] });
-    browser.tabs.ungroup(toBeUngroupedIds);
   });
+  let done = false;
+  await Promise.race([
+    Promise.all([
+      promisedUngrouped,
+      // Chrome also moves a tab ungrouped in the middle of its group to the
+      // nearest edge, and reports that move only after the new groupId. The
+      // call completes after both: wait for it, or our next move of the tab
+      // would be overwritten by this one.
+      browser.tabs.ungroup(toBeUngroupedIds).catch(error => {
+        recordGroupFailure(`failed to ungroup tabs ${toBeUngroupedIds}: ${error}`);
+        resolveUngrouped();
+      }),
+    ]),
+    wait(GROUP_CHANGE_TIMEOUT).then(() => {
+      if (!done)
+        recordGroupFailure(`timed out waiting for tabs ${toBeUngroupedIds} to be ungrouped`);
+    }),
+  ]);
+  done = true;
   for (const tab of tabsToBeUngrouped) {
     win.clearInternalMoving(tab.id);
+    win.internallyMovingTabsForUpdatedNativeTabGroups.delete(tab.id);
     TabsStore.removeNativelyGroupedTab(tab, win.id);
   }
   browser.tabs.onUpdated.removeListener(onUpdated);

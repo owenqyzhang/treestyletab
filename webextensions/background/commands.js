@@ -689,6 +689,40 @@ async function performTabsDragDrop(tabs, params) {
     UserOperationBlocker.blockIn(blockedWindowId, { throbber: true });
   }
 
+  let movedTabs;
+  try {
+    movedTabs = await moveDraggedTabs(tabs, params, {
+      createGroup,
+      beforeIndices,
+      nativeTabGroupId,
+      nativeTabGroupIdFromPositionDeterminedByBrowser,
+      draggedGroupParams,
+    });
+  }
+  finally {
+    // A failure must not leave the sidebar blocked: it could only be
+    // recovered by reopening the sidebar.
+    if (blockedWindowId) {
+      UserOperationBlocker.unblockIn(blockedWindowId, { throbber: true });
+    }
+  }
+
+  log('performTabsDragDrop: finish');
+
+  if (movedTabs.length == 0)
+    return movedTabs;
+
+  if (params.windowId != params.destinationWindowId) {
+    // Firefox always focuses to the dropped (moved) tab if it is dragged from another window.
+    // TST respects Firefox's behavior.
+    await browser.tabs.update(movedTabs[0].id, { active: true })
+      .catch(ApiTabs.createErrorHandler(ApiTabs.handleMissingTabError));
+  }
+  return movedTabs;
+}
+
+// The part of performTabsDragDrop() run while the sidebar is blocked.
+async function moveDraggedTabs(tabs, params, { createGroup, beforeIndices, nativeTabGroupId, nativeTabGroupIdFromPositionDeterminedByBrowser, draggedGroupParams }) {
   if ((params.droppedOn?.type == TreeItem.TYPE_GROUP ||
        params.droppedAfter?.type == TreeItem.TYPE_GROUP ||
        params.droppedBefore?.type == TreeItem.TYPE_GROUP) &&
@@ -770,21 +804,6 @@ async function performTabsDragDrop(tabs, params) {
     await NativeTabGroups.matchTabsGrouped(movedTabs, draggedGroupParams || nativeTabGroupId);
   }
 
-  if (blockedWindowId) {
-    UserOperationBlocker.unblockIn(blockedWindowId, { throbber: true });
-  }
-
-  log('performTabsDragDrop: finish');
-
-  if (movedTabs.length == 0)
-    return movedTabs;
-
-  if (windowId != destinationWindowId) {
-    // Firefox always focuses to the dropped (moved) tab if it is dragged from another window.
-    // TST respects Firefox's behavior.
-    await browser.tabs.update(movedTabs[0].id, { active: true })
-      .catch(ApiTabs.createErrorHandler(ApiTabs.handleMissingTabError));
-  }
   return movedTabs;
 }
 

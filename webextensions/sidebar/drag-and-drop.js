@@ -300,6 +300,11 @@ function getDropAction(event) {
       return null;
     }
     const draggedGroup = info.draggedItem?.type == TreeItem.TYPE_GROUP ? info.draggedItem : null;
+    // Dragged tabs dropped next to an ungrouped row (or after a collapsed
+    // group) must leave their group. Without an explicit -1, the background
+    // takes the group of the neighbor tab across the boundary, so a tab
+    // dropped just above or below its group could never be moved out.
+    const groupIdOutsideGroups = draggedGroup ? draggedGroup.id : -1;
     switch (info.dropPosition) {
       case kDROP_ON_SELF:
       default:
@@ -308,11 +313,11 @@ function getDropAction(event) {
       case kDROP_AFTER:
         if (targetItem.type == TreeItem.TYPE_GROUP) {
           return targetItem.collapsed ?
-            draggedGroup?.id : // dropping after a collapsed group => keep the original group
+            groupIdOutsideGroups : // dropping after a collapsed group => keep the original group
             targetItem.id; // otherwise we try to insert items at the top of a group
         }
         return targetItem.groupId == -1 ?
-          draggedGroup?.id : // dropping after ungrouped tab => keep the original group
+          groupIdOutsideGroups : // dropping after ungrouped tab => keep the original group
           targetItem.groupId; // otherwise we try to add items to the group of the tab
 
       case kDROP_BEFORE:
@@ -329,7 +334,7 @@ function getDropAction(event) {
           return previousTab?.groupId || -1;
         }
         return targetItem.groupId == -1 ?
-          draggedGroup?.id : // dropping before ungrouped tab => keep the original group
+          groupIdOutsideGroups : // dropping before ungrouped tab => keep the original group
           targetItem.groupId; // otherwise we are trying to add items to the group of the tab
     }
   });
@@ -346,8 +351,10 @@ function getDropAction(event) {
     }
 
     const draggedItem = info.dragData?.item;
-    const isPrivateBrowsingTabDragged = draggedItem?.incognito;
-    const isPrivateBrowsingDropTarget = (info.dragOverItem || Tab.getFirstTab(TabsStore.getCurrentWindowId())).incognito;
+    // Chrome's tab groups have no `incognito`: compare as booleans, or no
+    // tab could be dropped on a group header.
+    const isPrivateBrowsingTabDragged = !!draggedItem?.incognito;
+    const isPrivateBrowsingDropTarget = !!(info.dragOverItem || Tab.getFirstTab(TabsStore.getCurrentWindowId())).incognito;
     if (draggedItem &&
         isPrivateBrowsingTabDragged != isPrivateBrowsingDropTarget) {
       log('canDrop:undroppable: mismatched incognito status');
@@ -602,9 +609,14 @@ function getDropAction(event) {
 
     case kDROP_AFTER: {
       log('drop position = after ', info.targetItem.id);
-      const referenceItems = TreeBehavior.calculateReferenceItemsFromInsertionPosition(info.draggedItem, {
-        insertAfter: targetItem.$TST.lastMember || (targetItem.$TST.subtreeCollapsed && targetItem.$TST.lastDescendant || targetItem),
-      });
+      // The lower half of an expanded group's header means the top of the
+      // group (see the groupId getter): insert before its first member.
+      // Inserting after its last member left a tab dropped there from just
+      // below the group where it was, outside the group.
+      const isExpandedGroup = targetItem.type == TreeItem.TYPE_GROUP && !targetItem.collapsed && targetItem.$TST.firstMember;
+      const referenceItems = TreeBehavior.calculateReferenceItemsFromInsertionPosition(info.draggedItem, isExpandedGroup ?
+        { insertBefore: targetItem.$TST.firstMember } :
+        { insertAfter: targetItem.$TST.lastMember || (targetItem.$TST.subtreeCollapsed && targetItem.$TST.lastDescendant || targetItem) });
       log('referenceItems ', referenceItems);
       info.parent       = referenceItems.parent;
       info.insertBefore = referenceItems.insertBefore;
