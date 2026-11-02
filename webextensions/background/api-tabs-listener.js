@@ -34,6 +34,7 @@ import {
   stack,
 } from '/common/common.js';
 import * as ApiTabs from '/common/api-tabs.js';
+import { IS_CHROME } from '/common/browser-compat.js';
 import * as Constants from '/common/constants.js';
 import * as SidebarConnection from '/common/sidebar-connection.js';
 import * as TabsInternalOperation from '/common/tabs-internal-operation.js';
@@ -57,6 +58,10 @@ function logUpdated(...args) {
 }
 
 let mAppIsActive = false;
+// Chrome: when the browser got the focus back from another application.
+// The focus may come back just before the tab opened by that application.
+let mAppActivatedAt = 0;
+const APP_ACTIVATION_GRACE_PERIOD = 1000;
 
 export function init() {
   browser.tabs.onActivated.addListener(onActivated);
@@ -391,6 +396,28 @@ async function onCreated(tab) {
   return onNewTabTracked(tab, { trigger: 'tabs.onCreated', metric });
 }
 
+// Chrome gives the active tab as the opener to a tab it appends to the end of
+// the tab strip by itself: a link opened from another application (and a URL
+// typed in the address bar and opened in a new tab). Tabs opened by links in
+// a page are inserted next to their opener instead. Such a tab was not opened
+// from the active tab, so handle it as a tab from another application without
+// opener, as on Firefox; otherwise it becomes a child of the last active tab.
+function isOpenerInheritedFromActiveTab(tab, { win, activeTab }) {
+  if (!tab.openerTabId ||
+      tab.openerTabId != activeTab?.id ||
+      !tab.active ||
+      tab.pinned ||
+      tab.index < win.tabs.size) // not appended to the end
+    return false;
+  // A link in the last tab opens its foreground tab at the end too: only the
+  // focus tells them apart.
+  return (
+    tab.index > activeTab.index + 1 ||
+    !mAppIsActive ||
+    Date.now() - mAppActivatedAt < APP_ACTIVATION_GRACE_PERIOD
+  );
+}
+
 async function onNewTabTracked(tab, info) {
   const win                  = Window.track(tab.windowId);
   const bypassTabControl     = win.bypassTabControlCount > 0;
@@ -400,7 +427,21 @@ async function onNewTabTracked(tab, info) {
   const duplicatedInternally = win.duplicatingTabsCount > 0;
   const maybeOrphan          = win.toBeOpenedOrphanTabs > 0;
   const activeTab            = Tab.getActiveTab(win.id);
-  const fromExternal         = !mAppIsActive && !tab.openerTabId;
+  const inheritedOpenerTabId = (
+    IS_CHROME &&
+    info.trigger == 'tabs.onCreated' &&
+    !bypassTabControl &&
+    !isNewTabCommandTab &&
+    !positionedBySelf &&
+    !duplicatedInternally &&
+    !maybeOrphan &&
+    isOpenerInheritedFromActiveTab(tab, { win, activeTab })
+  ) ? tab.openerTabId : null;
+  if (inheritedOpenerTabId) {
+    log(`onNewTabTracked: ignore openerTabId ${inheritedOpenerTabId} of ${tab.id}, given by Chrome from the active tab`);
+    delete tab.openerTabId;
+  }
+  const fromExternal         = (!mAppIsActive || !!inheritedOpenerTabId) && !tab.openerTabId;
   const initialOpenerTabId   = tab.openerTabId;
   const metric               = info.metric || new MetricsData(`tab ${tab.id}`);
 
@@ -766,6 +807,10 @@ async function onNewTabTracked(tab, info) {
         log(`openerTabId of ${tab.id} is different from the raw value but it has been updated by TST while attaching, so don't detect as updated for now`);
         continue;
       }
+      if (key == 'openerTabId' &&
+          inheritedOpenerTabId &&
+          value == inheritedOpenerTabId) // Chrome still reports the ignored opener
+        continue;
       changedProps[key] = value;
     }
 
@@ -1388,7 +1433,10 @@ async function onWindowRemoved(windowId) {
 
 
 browser.windows.onFocusChanged.addListener(windowId => {
-  mAppIsActive = windowId > 0;
+  const active = windowId > 0;
+  if (active && !mAppIsActive)
+    mAppActivatedAt = Date.now();
+  mAppIsActive = active;
 });
 
 
