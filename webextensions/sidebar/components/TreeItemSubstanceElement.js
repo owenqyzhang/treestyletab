@@ -72,7 +72,7 @@ export class TreeItemSubstanceElement extends HTMLElement {
 
   static onWindowResize() {
     for (const element of document.querySelectorAll(kTREE_ITEM_SUBSTANCE_ELEMENT_NAME)) {
-      element.invalidateTooltip();
+      element.invalidateTooltip?.(); // not upgraded yet while the sidebar is loading
     }
   }
 
