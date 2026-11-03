@@ -22,11 +22,15 @@ default branch; `manifest.firefox.json` preserves the original manifest.
   Firefox-only APIs TST depends on:
   - `sessions.set/get/removeTabValue` + window values →
     `common/compat-sessions.js`: values live in `chrome.storage.session`
-    (survives service-worker restarts) and a URL-fingerprinted snapshot in
-    `chrome.storage.local` re-associates them with restored tabs after a full
-    browser restart. Tab duplication copies values; restoring a recently
-    closed tab re-attaches its values. When Chrome replaces a tab's id
-    (`tabs.onReplaced`, see below) the values move to the new id.
+    (survives service-worker restarts, but not extension reloads/updates or
+    browser restarts) and in a snapshot in `chrome.storage.local` (tab and
+    window ids and URLs, written 2 s after a value or URL changes). After an
+    extension reload or update the tab ids are still valid and the values are
+    re-associated by id; after a browser restart, by aligning the URL
+    sequences (longest common subsequence) of each window. Tab duplication
+    copies values; restoring a recently closed tab re-attaches its values.
+    When Chrome replaces a tab's id (`tabs.onReplaced`, see below) the values
+    move to the new id.
   - Successor tabs (`tabs.moveInSuccession`, `tabs.update({successorTabId})`)
     → `common/compat-successor.js`: when the active tab closes, the recorded
     successor is focused (Chrome briefly focuses its own pick first).
@@ -58,10 +62,25 @@ default branch; `manifest.firefox.json` preserves the original manifest.
   work (native moves, debounced saves) and lost or scrambled tree changes.
   Reproduce with Chrome for Testing launched with
   `--disable-features=WebContentsDiscard` and `chrome.tabs.discard()`.
+- **Extension reloads close TST's own tabs**: Chrome closes every tab of an
+  extension when it unloads it (reload, update, disable), including the
+  options page and group tabs. The saved tree (the `tree-structure` window
+  value) is therefore matched to the tabs by unique id
+  (`TreeBehavior.alignTreeStructure()`): missing tabs are dropped and their
+  children move up, instead of discarding the whole structure for the
+  per-tab restore info, which is often outdated on Chrome. Group tabs closed
+  this way are opened again at their old place with their values before
+  the tree is restored, when the tab ids show that the browser session is
+  the same or right after a stale-code reload (after a browser restart
+  Chrome restores them itself). Before the stale-code reload (below) the
+  sidebar makes the service worker save its snapshot.
 - **Diagnostics**: `common/crash-recorder.js` keeps a ring buffer of errors
   and tab/tree breadcrumbs (`[onReplaced]`, `[reload]`, `[structure]`,
-  `[attach]`, `[detach]`, ...) in `storage.local`, across service-worker
-  restarts. Run `dumpCrashLog()` in the service worker console.
+  `[sessions]`, `[attach]`, `[detach]`, ...) in `storage.local`, across
+  service-worker restarts. Run `dumpCrashLog()` in the service worker
+  console. `await restoreTreeStructure(windowId, structure)` puts back a
+  saved `tree-structure` (e.g. one recovered from an older copy of the
+  extension's storage) and rebuilds the tree from it.
   Independently of `debug` (no console spam, no outlines in the sidebar),
   every internal log line of the background and each sidebar is kept in a
   bounded buffer mirrored to `storage.local` (`recordDebugLog`, on by

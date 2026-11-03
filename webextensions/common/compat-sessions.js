@@ -10,9 +10,10 @@
 # Storage model:
 #   - chrome.storage.session: authoritative live map (survives service
 #     worker restarts, cleared when the browser exits)
-#   - chrome.storage.local: fingerprinted snapshot (tab URLs in index
-#     order per window) used to re-associate values with the restored
-#     tabs after a full browser restart, which Firefox does natively.
+#   - chrome.storage.local: fingerprinted snapshot (tab ids and URLs in
+#     index order per window) used to re-associate values with the tabs
+#     after a full browser restart, which Firefox does natively, and after
+#     the extension is reloaded or updated, which clears storage.session.
 #   - recently closed tabs keep their values in an LRU for a while, so
 #     values are re-attached when the user restores a closed tab
 #     (Ctrl/Cmd+Shift+T), detected via chrome.sessions.getRecentlyClosed.
@@ -24,10 +25,18 @@
 */
 'use strict';
 
+import { isRightAfterReloadForStaleCode } from './stale-code.js';
+
 // Constants.kPERSISTENT_ID. Not imported: browser-compat.js imports this
 // module, so its imports are evaluated before the browser facade exists, and
 // constants.js calls browser.* at the top level.
 const PERSISTENT_ID_KEY = 'data-persistent-id';
+
+// TST's group tabs are pages of this extension. Chrome closes them when it
+// unloads the extension (reload, update, disable) and does not bring them
+// back, while their trees are still saved; after a browser restart Chrome
+// restores them by itself.
+const GROUP_TAB_URL = chrome.runtime.getURL('resources/group-tab.html');
 
 const SESSION_STORAGE_KEY = 'treestyletab:compat-sessions:live';
 const LOCAL_STORAGE_KEY   = 'treestyletab:compat-sessions:snapshot';
@@ -60,6 +69,10 @@ function tabUrl(tab) {
   return tab.url || tab.pendingUrl || '';
 }
 
+function breadcrumb(detail) {
+  globalThis.__treestyletabBreadcrumb?.('sessions', detail); // eslint-disable-line no-underscore-dangle
+}
+
 // ===================================================================
 // Persistence
 // ===================================================================
@@ -83,41 +96,57 @@ function scheduleSessionWrite() {
   }, 200);
 }
 
+// Changes can come in a steady stream (e.g. a page updating its URL every
+// second): write at least every LOCAL_WRITE_MAX_DELAY.
+const LOCAL_WRITE_DELAY     = 2000;
+const LOCAL_WRITE_MAX_DELAY = 10000;
 let mLocalWriteTimer = null;
+let mLocalWriteFirstRequestedAt = 0;
 function scheduleLocalWrite() {
-  if (mLocalWriteTimer)
+  const now = Date.now();
+  if (!mLocalWriteTimer)
+    mLocalWriteFirstRequestedAt = now;
+  else if (now - mLocalWriteFirstRequestedAt < LOCAL_WRITE_MAX_DELAY - LOCAL_WRITE_DELAY)
     clearTimeout(mLocalWriteTimer);
-  mLocalWriteTimer = setTimeout(async () => {
-    mLocalWriteTimer = null;
-    try {
-      const tabs = await chrome.tabs.query({});
-      const windows = new Map();
-      for (const tab of tabs) {
-        let windowEntry = windows.get(tab.windowId);
-        if (!windowEntry) {
-          windowEntry = {
-            values: mWindowValues.get(tab.windowId) || null,
-            tabs:   [],
-          };
-          windows.set(tab.windowId, windowEntry);
-        }
-        windowEntry.tabs.push({
-          url:    tabUrl(tab),
-          values: mTabValues.get(tab.id) || null,
-        });
+  else
+    return; // a write is due soon anyway
+  mLocalWriteTimer = setTimeout(writeLocalSnapshot, LOCAL_WRITE_DELAY);
+}
+
+async function writeLocalSnapshot() {
+  clearTimeout(mLocalWriteTimer);
+  mLocalWriteTimer = null;
+  try {
+    const tabs = await chrome.tabs.query({});
+    const windows = new Map();
+    for (const tab of tabs) {
+      let windowEntry = windows.get(tab.windowId);
+      if (!windowEntry) {
+        windowEntry = {
+          id:     tab.windowId,
+          values: mWindowValues.get(tab.windowId) || null,
+          tabs:   [],
+        };
+        windows.set(tab.windowId, windowEntry);
       }
-      await chrome.storage.local.set({
-        [LOCAL_STORAGE_KEY]: {
-          version: 1,
-          savedAt: Date.now(),
-          windows: Array.from(windows.values()),
-        },
+      windowEntry.tabs.push({
+        id:      tab.id,
+        url:     tabUrl(tab),
+        groupId: tab.groupId ?? -1,
+        values:  mTabValues.get(tab.id) || null,
       });
     }
-    catch(error) {
-      console.error('compat-sessions: failed to write local snapshot', error);
-    }
-  }, 2000);
+    await chrome.storage.local.set({
+      [LOCAL_STORAGE_KEY]: {
+        version: 1,
+        savedAt: Date.now(),
+        windows: Array.from(windows.values()),
+      },
+    });
+  }
+  catch(error) {
+    console.error('compat-sessions: failed to write local snapshot', error);
+  }
 }
 
 function markDirty() {
@@ -142,11 +171,12 @@ async function restoreFromSnapshotOrAssociate() {
     for (const [id, values] of Object.entries(live.windows || {})) {
       mWindowValues.set(Number(id), values);
     }
+    breadcrumb(`restored the values of ${mTabValues.size} tabs from storage.session`);
     return;
   }
 
-  // Full browser restart: associate the local snapshot with restored tabs
-  // by matching URL sequences per window.
+  // Browser restart, or the extension was reloaded or updated: associate the
+  // local snapshot with the tabs.
   const localData = await chrome.storage.local.get(LOCAL_STORAGE_KEY).catch(_error => null);
   const snapshot = localData && localData[LOCAL_STORAGE_KEY];
   if (!snapshot?.windows?.length)
@@ -163,12 +193,90 @@ async function restoreFromSnapshotOrAssociate() {
     tabs.sort((a, b) => a.index - b.index);
   }
 
+  const assignedWindows   = new Set();
+  const assignedPersisted = new Set();
+  const consumedEntries   = new Set();
+  const sameSessionWindows = [];
+  const urlMatchedWindows  = [];
+  const associatedTabIds   = new Set();
+  const sameSessionEntries = new Set(); // persisted.tabs of windows in this browser session
+
+  // Reloading or updating the extension clears storage.session but keeps the
+  // browser session, so tab and window ids are still valid. Matching by id
+  // also keeps the values of tabs that navigated after the snapshot was
+  // written, which the URL matching below would lose or give to another tab.
+  // Older Chrome versions could reuse ids after a browser restart, so a window
+  // is matched by id only when its id-matched tabs mostly also have their old
+  // URLs or positions (not counting the tabs closed since, e.g. by the unload).
+  const liveTabsById = new Map(currentTabs.map(tab => [tab.id, tab]));
+  snapshot.windows.forEach((persisted, persistedIndex) => {
+    const tabs = currentWindows.get(persisted.id);
+    if (!tabs)
+      return;
+    const entriesWithLiveTab = [];
+    let goneCount = 0;
+    let inWindowCount = 0;
+    let confirmedCount = 0;
+    persisted.tabs.forEach((entry, index) => {
+      const tab = liveTabsById.get(entry.id);
+      if (!tab) {
+        goneCount++;
+        return;
+      }
+      entriesWithLiveTab.push(entry);
+      if (tab.windowId != persisted.id) { // moved to another window
+        goneCount++;
+        return;
+      }
+      inWindowCount++;
+      if (tabUrl(tab) == entry.url ||
+          tab.index == index - goneCount)
+        confirmedCount++;
+    });
+    if (confirmedCount == 0 ||
+        confirmedCount * 2 < inWindowCount)
+      return;
+    assignedWindows.add(persisted.id);
+    assignedPersisted.add(persistedIndex);
+    if (persisted.values)
+      mWindowValues.set(persisted.id, persisted.values);
+    const tabIdOfEntry = new Map();
+    for (const entry of entriesWithLiveTab) {
+      if (entry.values)
+        mTabValues.set(entry.id, entry.values);
+      consumedEntries.add(entry);
+      tabIdOfEntry.set(entry, entry.id);
+      associatedTabIds.add(entry.id);
+    }
+    // Tabs opened or given new ids (tabs.onReplaced) after the snapshot was
+    // written.
+    const matchedTabIds = new Set(entriesWithLiveTab.map(entry => entry.id));
+    associateTabsByUrl(
+      tabs.filter(tab => !matchedTabIds.has(tab.id)),
+      persisted.tabs.filter(entry => !consumedEntries.has(entry)),
+      consumedEntries,
+      tabIdOfEntry
+    );
+    sameSessionWindows.push({ windowId: persisted.id, entries: persisted.tabs, tabIdOfEntry });
+    sameSessionEntries.add(persisted.tabs);
+    breadcrumb(`window ${persisted.id}: associated ${entriesWithLiveTab.length} tabs by id and ${tabIdOfEntry.size - entriesWithLiveTab.length} by URL, of ${tabs.length} tabs (snapshot of ${persisted.tabs.length})`);
+  });
+  for (const { windowId, entries, tabIdOfEntry } of sameSessionWindows) {
+    const reopened = await reopenClosedGroupTabs(windowId, entries, tabIdOfEntry, consumedEntries);
+    if (reopened > 0)
+      breadcrumb(`window ${windowId}: reopened ${reopened} group tabs closed with the extension`);
+  }
+
   // Score all (current window, persisted window) pairs by shared URL count,
   // then assign greedily.
   const pairs = [];
   for (const [windowId, tabs] of currentWindows.entries()) {
+    if (assignedWindows.has(windowId))
+      continue;
     const urls = tabs.map(tabUrl);
     snapshot.windows.forEach((persisted, index) => {
+      if (assignedPersisted.has(index))
+        return;
       const persistedUrls = new Map();
       for (const entry of persisted.tabs) {
         persistedUrls.set(entry.url, (persistedUrls.get(entry.url) || 0) + 1);
@@ -187,9 +295,6 @@ async function restoreFromSnapshotOrAssociate() {
   }
   pairs.sort((a, b) => b.score - a.score);
 
-  const assignedWindows   = new Set();
-  const assignedPersisted = new Set();
-  const consumedEntries   = new Set();
   for (const pair of pairs) {
     if (assignedWindows.has(pair.windowId) ||
         assignedPersisted.has(pair.persistedIndex))
@@ -201,28 +306,33 @@ async function restoreFromSnapshotOrAssociate() {
     if (persisted.values)
       mWindowValues.set(pair.windowId, persisted.values);
 
-    // In-order greedy matching of URL sequences: tolerates tabs
-    // inserted/removed between sessions.
-    const tabs = currentWindows.get(pair.windowId);
-    let persistedCursor = 0;
-    for (const tab of tabs) {
-      const url = tabUrl(tab);
-      for (let lookahead = persistedCursor; lookahead < persisted.tabs.length; lookahead++) {
-        if (persisted.tabs[lookahead].url != url)
-          continue;
-        if (persisted.tabs[lookahead].values)
-          mTabValues.set(tab.id, persisted.tabs[lookahead].values);
-        consumedEntries.add(persisted.tabs[lookahead]);
-        persistedCursor = lookahead + 1;
-        break;
-      }
+    // not the tabs moved here from a window associated by id
+    const tabs = currentWindows.get(pair.windowId).filter(tab => !associatedTabIds.has(tab.id));
+    const tabIdOfEntry = new Map();
+    associateTabsByUrl(tabs, persisted.tabs, consumedEntries, tabIdOfEntry);
+    urlMatchedWindows.push({ windowId: pair.windowId, entries: persisted.tabs, tabIdOfEntry });
+    breadcrumb(`window ${pair.windowId}: associated ${tabIdOfEntry.size} tabs by URL, of ${tabs.length} tabs (snapshot of ${persisted.tabs.length})`);
+  }
+  // The reload installing an update reads a snapshot written by the outdated
+  // code, without the ids that tell the browser session is the same.
+  if (urlMatchedWindows.length > 0 &&
+      await isRightAfterReloadForStaleCode()) {
+    for (const { windowId, entries, tabIdOfEntry } of urlMatchedWindows) {
+      sameSessionEntries.add(entries);
+      const reopened = await reopenClosedGroupTabs(windowId, entries, tabIdOfEntry, consumedEntries);
+      if (reopened > 0)
+        breadcrumb(`window ${windowId}: reopened ${reopened} group tabs closed with the extension (reloaded for stale code)`);
     }
   }
 
   // Keep unconsumed entries around: lazily restored windows/tabs are
   // created later and matched by URL in the onCreated handler.
+  // Within the same browser session nothing restores tabs lazily, and a tab
+  // opened later would only take the place of a closed one.
   mStartupLeftovers = [];
   for (const persisted of snapshot.windows) {
+    if (sameSessionEntries.has(persisted.tabs))
+      continue;
     for (const entry of persisted.tabs) {
       if (entry.values && !consumedEntries.has(entry))
         mStartupLeftovers.push(entry);
@@ -231,6 +341,122 @@ async function restoreFromSnapshotOrAssociate() {
   if (mStartupLeftovers.length == 0)
     mStartupLeftovers = null;
   mStartupTimestamp = Date.now();
+}
+
+// Matches the URL sequences in order, by their longest common subsequence:
+// tolerates tabs opened, closed or navigated since the snapshot was written.
+// (Taking the next entry with the same URL instead lets a tab that navigated
+// to the URL of a later tab skip all the entries in between.)
+const MAX_ALIGNED_CELLS = 4 * 1000 * 1000;
+function associateTabsByUrl(tabs, entries, consumedEntries, tabIdOfEntry = null) {
+  const urls = tabs.map(tabUrl);
+  const associate = (tabIndex, entryIndex) => {
+    const entry = entries[entryIndex];
+    if (entry.values)
+      mTabValues.set(tabs[tabIndex].id, entry.values);
+    consumedEntries.add(entry);
+    tabIdOfEntry?.set(entry, tabs[tabIndex].id);
+  };
+
+  // Unchanged ends need no search.
+  let first = 0;
+  while (first < urls.length &&
+         first < entries.length &&
+         urls[first] == entries[first].url) {
+    associate(first, first);
+    first++;
+  }
+  let tabsEnd    = urls.length;
+  let entriesEnd = entries.length;
+  while (tabsEnd > first &&
+         entriesEnd > first &&
+         urls[tabsEnd - 1] == entries[entriesEnd - 1].url) {
+    associate(--tabsEnd, --entriesEnd);
+  }
+
+  const rows    = tabsEnd - first;
+  const columns = entriesEnd - first + 1;
+  if ((rows + 1) * columns > MAX_ALIGNED_CELLS) {
+    // Too large to align: the next entry with the same URL.
+    let cursor = first;
+    for (let i = first; i < tabsEnd; i++) {
+      for (let j = cursor; j < entriesEnd; j++) {
+        if (entries[j].url != urls[i])
+          continue;
+        associate(i, j);
+        cursor = j + 1;
+        break;
+      }
+    }
+    return;
+  }
+  // lengths[r * columns + c]: the LCS length of the rest from (r, c)
+  const lengths = new Uint32Array((rows + 1) * columns);
+  for (let r = rows - 1; r >= 0; r--) {
+    for (let c = columns - 2; c >= 0; c--) {
+      lengths[r * columns + c] = urls[first + r] == entries[first + c].url ?
+        lengths[(r + 1) * columns + c + 1] + 1 :
+        Math.max(lengths[(r + 1) * columns + c], lengths[r * columns + c + 1]);
+    }
+  }
+  let r = 0;
+  let c = 0;
+  while (r < rows && c < columns - 1) {
+    if (urls[first + r] == entries[first + c].url) {
+      associate(first + r, first + c);
+      r++;
+      c++;
+    }
+    else if (lengths[(r + 1) * columns + c] >= lengths[r * columns + c + 1]) {
+      r++;
+    }
+    else {
+      c++;
+    }
+  }
+}
+
+// Opens the group tabs the unloaded extension took with it again where they
+// were, before TST restores its tree from the values.
+async function reopenClosedGroupTabs(windowId, entries, tabIdOfEntry, consumedEntries) {
+  let reopened = 0;
+  for (const [index, entry] of entries.entries()) {
+    if (consumedEntries.has(entry) ||
+        !entry.values?.[PERSISTENT_ID_KEY] ||
+        !entry.url?.startsWith(GROUP_TAB_URL))
+      continue;
+    try {
+      // Before the tab that followed it.
+      let nextTab = null;
+      for (const next of entries.slice(index + 1)) {
+        const tab = tabIdOfEntry.has(next) && await chrome.tabs.get(tabIdOfEntry.get(next)).catch(_error => null);
+        if (tab?.windowId == windowId) {
+          nextTab = tab;
+          break;
+        }
+      }
+      const tab = await chrome.tabs.create({
+        windowId,
+        url:    entry.url,
+        active: false,
+        ...(nextTab ? { index: nextTab.index } : {}),
+      });
+      mTabValues.set(tab.id, entry.values);
+      mTabUrls.set(tab.id, entry.url);
+      consumedEntries.add(entry);
+      tabIdOfEntry.set(entry, tab.id);
+      reopened++;
+      // Opened at the edge of its native tab group, it is outside the group.
+      if (entry.groupId > -1 &&
+          tab.groupId != entry.groupId &&
+          (await chrome.tabGroups.get(entry.groupId).catch(_error => null))?.windowId == windowId)
+        await chrome.tabs.group({ groupId: entry.groupId, tabIds: [tab.id] }).catch(_error => {});
+    }
+    catch(error) {
+      console.error('compat-sessions: failed to reopen a group tab', entry.url, error);
+    }
+  }
+  return reopened;
 }
 
 // ===================================================================
@@ -389,6 +615,7 @@ const API = {
   getWindowValue,
   removeWindowValue,
   copyTabValues,
+  flush,
 };
 
 function listen() {
@@ -410,6 +637,8 @@ function listen() {
       // Lazily restored tabs may receive their URL only after creation.
       if (!mTabValues.has(tabId))
         tryReattachStartupLeftovers(tab);
+      else // a browser restart matches tabs by URL
+        scheduleLocalWrite();
     }
   });
 
@@ -540,6 +769,14 @@ export async function removeWindowValue(windowId, key) {
       mWindowValues.delete(windowId);
     markDirty();
   }
+}
+
+// Saves the values for the next start now, e.g. before the extension is
+// reloaded: the reload clears storage.session.
+export async function flush() {
+  await init();
+  await writeLocalSnapshot();
+  return true;
 }
 
 // Firefox copies session values when a tab is duplicated; Chrome does not.

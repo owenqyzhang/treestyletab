@@ -122,7 +122,8 @@ Tab.onCreating.addListener((tab, info = {}) => {
         tab.$TST.temporaryMetadata.set('isNewTab', true);
     }
     if (info.fromExternal &&
-        !info.bypassTabControl) {
+        !info.bypassTabControl &&
+        !info.restored) { // e.g. group tabs opened again after Chrome closed them with TST (common/compat-sessions.js)
       log('behave as a tab opened from external application');
       // we may need to reopen the tab with loaded URL
       if (configs.inheritContextualIdentityToTabsFromExternalMode != Constants.kCONTEXTUAL_IDENTITY_DEFAULT)
