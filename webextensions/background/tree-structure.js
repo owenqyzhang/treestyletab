@@ -123,6 +123,94 @@ function findStructureOffset(uniqueIds, structure) {
   return offset;
 }
 
+async function applyTreeStructureToTabs(tabs, structure) {
+  await Tree.applyTreeStructureToTabs(tabs, structure);
+  // Tree.applyTreeStructureToTabs() only collapses trees and hides tabs, but
+  // the tabs can come with states from outdated per-tab restore info (on
+  // Chrome) or from the tree that Background.reload() restored from its
+  // cache before applying the saved structure. Not an expansion by the user
+  // (Tree.collapseExpandSubtree() would also expand native tab groups).
+  for (const [index, tab] of tabs.entries()) {
+    if (structure[index]?.collapsed === false &&
+        tab.$TST.subtreeCollapsed)
+      await tab.$TST.removeState(Constants.kTAB_STATE_SUBTREE_COLLAPSED, { permanently: true });
+    tab.$TST.temporaryMetadata.set('treeStructureAlreadyRestoredFromSessionData', true);
+  }
+  updateCollapsedStates(tabs);
+}
+
+function updateCollapsedStates(tabs) {
+  for (const tab of tabs) { // ancestors first
+    const shouldBeCollapsed = tab.$TST.ancestors.some(ancestor => ancestor.$TST.collapsed || ancestor.$TST.subtreeCollapsed);
+    if (tab.$TST.collapsed != shouldBeCollapsed)
+      Tree.collapseExpandTab(tab, {
+        collapsed: shouldBeCollapsed,
+        justNow:   true,
+        broadcast: true,
+      });
+  }
+}
+
+// The tabs that the applied structure has no entry for keep the parents they
+// got from their own restore info or from the tree being rebuilt, which can
+// put them inside a tree they do not belong to (or the other way around).
+// Each run of such tabs between two tabs placed by the structure is kept
+// when it fits there, otherwise it joins the tree its position puts it in,
+// so that every tree stays contiguous.
+async function fitTabsToTreeByPosition(windowId, tabsToFit) {
+  const tabs = Tab.getAllTabs(windowId);
+  let runStart = -1;
+  for (let index = 0; index <= tabs.length; index++) {
+    if (index < tabs.length &&
+        tabsToFit.has(tabs[index])) {
+      if (runStart < 0)
+        runStart = index;
+      continue;
+    }
+    if (runStart < 0)
+      continue;
+    await fitRunToTreeByPosition(tabs.slice(runStart, index), tabs[runStart - 1], tabs[index]);
+    runStart = -1;
+  }
+  updateCollapsedStates(Tab.getAllTabs(windowId));
+}
+
+function canFollow(previous, tab) {
+  const parent = tab.$TST.parent;
+  return !parent || (previous && (parent == previous || previous.$TST.ancestors.includes(parent)));
+}
+
+async function fitRunToTreeByPosition(run, previous, next) {
+  if (run.every((tab, index) => canFollow(index == 0 ? previous : run[index - 1], tab)) &&
+      (!next || canFollow(run[run.length - 1], next)))
+    return;
+  log('fitRunToTreeByPosition: ', run.map(tab => tab.id), { previous: previous?.id, next: next?.id });
+  const parent = next?.$TST.parent;
+  const joinsTree = parent && canFollow(previous, next);
+  for (const [index, tab] of run.entries()) {
+    if (!TabsStore.ensureLivingItem(tab))
+      continue;
+    // Trees inside the run stay as they are (a group tab keeps its members).
+    if (index > 0 &&
+        run.slice(0, index).includes(tab.$TST.parent) &&
+        canFollow(run[index - 1], tab))
+      continue;
+    if (joinsTree &&
+        parent != tab &&
+        !parent.$TST.ancestors.includes(tab))
+      await Tree.attachTabTo(tab, parent, {
+        insertBefore: next,
+        dontMove:     true,
+        dontExpand:   true,
+        broadcast:    true,
+      });
+    else
+      Tree.detachTab(tab, {
+        broadcast: true,
+      });
+  }
+}
+
 export async function loadTreeStructure(windows, restoredFromCacheResults) {
   log('loadTreeStructure ', restoredFromCacheResults);
   MetricsData.add('loadTreeStructure: start');
@@ -134,17 +222,23 @@ export async function loadTreeStructure(windows, restoredFromCacheResults) {
     }
     const tabs = Tab.getAllTabs(win.id);
     let windowStateCompletelyApplied = false;
+    // The tabs the saved structure has no entry for.
+    let tabsToRestoreFromRestoredInfo = tabs;
+    let structureAligned = false;
     try {
       const structure = await browser.sessions.getWindowValue(win.id, Constants.kWINDOW_STATE_TREE_STRUCTURE).catch(ApiTabs.createErrorHandler());
       let uniqueIds = tabs.map(tab => tab.$TST.uniqueId || '?');
       MetricsData.add('loadTreeStructure: read stored data');
+      let structureApplied = false;
       if (structure &&
           structure.length > 0 &&
           structure.length <= tabs.length) {
         uniqueIds = uniqueIds.map(id => id.id);
         let tabsOffset;
         if (structure[0].id) {
-          tabsOffset = findStructureOffset(uniqueIds, structure);
+          // A structure of only some of the tabs is left to the aligned
+          // restore below, which also places the other tabs.
+          tabsOffset = structure.length == tabs.length ? findStructureOffset(uniqueIds, structure) : -1;
           windowStateCompletelyApplied = tabsOffset > -1;
         }
         else {
@@ -153,10 +247,8 @@ export async function loadTreeStructure(windows, restoredFromCacheResults) {
         }
         if (tabsOffset > -1) {
           const structureRestoreTabs = tabs.slice(tabsOffset, tabsOffset + structure.length);
-          await Tree.applyTreeStructureToTabs(structureRestoreTabs, structure);
-          for (const tab of structureRestoreTabs) {
-            tab.$TST.temporaryMetadata.set('treeStructureAlreadyRestoredFromSessionData', true);
-          }
+          await applyTreeStructureToTabs(structureRestoreTabs, structure);
+          structureApplied = true;
           MetricsData.add('loadTreeStructure: Tree.applyTreeStructureToTabs');
           breadcrumb('structure', `win ${win.id}: applied saved structure of ${structure.length}/${tabs.length} tabs at offset ${tabsOffset}`);
         }
@@ -169,6 +261,27 @@ export async function loadTreeStructure(windows, restoredFromCacheResults) {
         MetricsData.add('loadTreeStructure: no valid structure information');
         breadcrumb('structure', `win ${win.id}: no usable saved structure (${structure ? structure.length : 'none'} for ${tabs.length} tabs)`);
       }
+      // The per-tab restore info of the tabs can be outdated, especially on
+      // Chrome (common/compat-sessions.js), so the saved structure is applied
+      // to the tabs it still describes even when some tabs were closed or
+      // added since it was saved.
+      if (!structureApplied &&
+          structure?.length > 0) {
+        const aligned = TreeBehavior.alignTreeStructure(structure, tabs.map(tab => tab.$TST.uniqueId?.id));
+        if (aligned?.tabIndices.length > 0) {
+          const alignedTabs = aligned.tabIndices.map(index => tabs[index]);
+          await applyTreeStructureToTabs(alignedTabs, aligned.structure);
+          tabsToRestoreFromRestoredInfo = aligned.unmatchedTabIndices.map(index => tabs[index]);
+          windowStateCompletelyApplied = tabsToRestoreFromRestoredInfo.length == 0;
+          structureAligned = true;
+          MetricsData.add('loadTreeStructure: Tree.applyTreeStructureToTabs (aligned)');
+          const goneIds = aligned.droppedIds.filter(id => !aligned.movedIds.includes(id));
+          breadcrumb('structure', `win ${win.id}: applied saved structure to ${alignedTabs.length}/${tabs.length} tabs by unique id (${goneIds.length} saved tabs are gone${goneIds.length > 0 ? `: ${goneIds.slice(0, 5).join(', ')}` : ''}; ${aligned.movedIds.length} moved; ${tabsToRestoreFromRestoredInfo.length} tabs are not in it)`);
+        }
+        else {
+          breadcrumb('structure', `win ${win.id}: saved structure cannot be aligned to the tabs (${aligned ? 'no tab in it' : 'not a structure with unique ids'})`);
+        }
+      }
     }
     catch(error) {
       console.log(`TreeStructure.loadTreeStructure: Fatal error, ${error}`, stack(error.stack));
@@ -176,10 +289,11 @@ export async function loadTreeStructure(windows, restoredFromCacheResults) {
     }
     if (!windowStateCompletelyApplied) {
       log(`Tree information for the window ${win.id} is not same to actual state. Fallback to restoration from tab relations.`);
-      breadcrumb('structure', `win ${win.id}: falling back to per-tab restore info`);
+      breadcrumb('structure', `win ${win.id}: falling back to per-tab restore info for ${tabsToRestoreFromRestoredInfo.length}/${tabs.length} tabs`);
       MetricsData.add('loadTreeStructure: fallback to reserveToAttachTabFromRestoredInfo');
-      const unattachedTabs = new Set(tabs);
-      for (const tab of tabs) {
+      const unattachedTabs = new Set(tabsToRestoreFromRestoredInfo);
+      // The batch of another window can end first.
+      await Promise.all(tabsToRestoreFromRestoredInfo.map(tab =>
         reserveToAttachTabFromRestoredInfo(tab, {
           keepCurrentTree: true,
           canCollapse:     true
@@ -188,9 +302,8 @@ export async function loadTreeStructure(windows, restoredFromCacheResults) {
               tab.$TST.parent ||
               tab.$TST.hasChild)
             unattachedTabs.delete(tab);
-        });
-      }
-      await reserveToAttachTabFromRestoredInfo.promisedDone;
+        })
+      ));
       MetricsData.add('loadTreeStructure: attachTabFromRestoredInfo finish');
 
       // unknown tabs may appear inside tree, so we need to fixup tree based on their position.
@@ -213,6 +326,12 @@ export async function loadTreeStructure(windows, restoredFromCacheResults) {
       }
       MetricsData.add('loadTreeStructure: finish to fixup tree structure');
     }
+    if (structureAligned &&
+        tabsToRestoreFromRestoredInfo.length > 0)
+      await fitTabsToTreeByPosition(win.id, new Set(tabsToRestoreFromRestoredInfo));
+    // Otherwise the next restore would align the outdated structure again.
+    if (structureAligned)
+      reserveToSaveTreeStructure(win.id);
     Tab.dumpAll();
   })));
 }
@@ -230,6 +349,11 @@ async function reserveToAttachTabFromRestoredInfo(tab, options = {}) {
     reserveToAttachTabFromRestoredInfo.waiting = null;
     const tasks = reserveToAttachTabFromRestoredInfo.tasks.slice(0);
     reserveToAttachTabFromRestoredInfo.tasks = [];
+    // Tasks reserved while this batch runs go to the next one, with a new
+    // promise: this batch must not report them as done.
+    const onDone = reserveToAttachTabFromRestoredInfo.onDone;
+    delete reserveToAttachTabFromRestoredInfo.onDone;
+    delete reserveToAttachTabFromRestoredInfo.promisedDone;
     const bulk = tasks.length > 1;
     // Phase 0: resolve all unique IDs before collecting info
     await Tab.waitUntilTracked(tasks.map(task => task.tab.id));
@@ -265,10 +389,8 @@ async function reserveToAttachTabFromRestoredInfo(tab, options = {}) {
         }
       }
     });
-    if (typeof reserveToAttachTabFromRestoredInfo.onDone == 'function')
-      reserveToAttachTabFromRestoredInfo.onDone(attachedResults.flat().every(attached => !!attached));
-    delete reserveToAttachTabFromRestoredInfo.onDone;
-    delete reserveToAttachTabFromRestoredInfo.promisedDone;
+    if (typeof onDone == 'function')
+      onDone(attachedResults.flat().every(attached => !!attached));
     Tab.dumpAll();
   }, 100);
   return reserveToAttachTabFromRestoredInfo.promisedDone;

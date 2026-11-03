@@ -10,8 +10,10 @@ import {
   configs,
   dumpDebugLogs,
 } from '/common/common.js';
+import * as Constants from '/common/constants.js';
 import * as SidebarConnection from '/common/sidebar-connection.js';
 import * as TabsStore from '/common/tabs-store.js';
+import * as TreeBehavior from '/common/tree-behavior.js';
 
 import MetricsData from '/common/MetricsData.js';
 import { Tab } from '/common/TreeItem.js';
@@ -89,6 +91,21 @@ globalThis.dumpTreeState = async () => {
       out.push(`!! sidebar row order differs from native order`);
   }
   return out.join('\n');
+};
+
+// Puts back a tree structure saved earlier (the "tree-structure" window
+// value, e.g. one recovered from an older copy of the extension's storage)
+// and rebuilds the tree from it. Tabs are matched by unique id; tabs that are
+// not in the structure keep their own restore info.
+// Usage: await restoreTreeStructure(windowId, structure)
+globalThis.restoreTreeStructure = async (windowId, structure) => {
+  const tabs = Tab.getAllTabs(windowId);
+  const aligned = TreeBehavior.alignTreeStructure(structure, tabs.map(tab => tab.$TST.uniqueId?.id));
+  if (!aligned?.tabIndices.length)
+    throw new Error(aligned ? 'none of the tabs is in the structure' : 'not a structure with unique ids');
+  await browser.sessions.setWindowValue(windowId, Constants.kWINDOW_STATE_TREE_STRUCTURE, structure);
+  await Background.reload({ all: true, reason: 'restoreTreeStructure' });
+  return `restored ${aligned.tabIndices.length}/${tabs.length} tabs; of the structure, ${aligned.droppedIds.length - aligned.movedIds.length} tabs are gone and ${aligned.movedIds.length} were moved; ${aligned.unmatchedTabIndices.length} tabs are not in it`;
 };
 
 // for old debugging method

@@ -445,3 +445,129 @@ function cleanUpTreeStructureArray(treeStructure, defaultParent) {
   });
   return treeStructure;
 }
+
+// The tabs found on startup may not match the saved structure exactly: for
+// example Chrome closes the extension's own pages (the options page, group
+// tabs) when the extension is reloaded. This matches saved entries to tabs by
+// unique id instead. Entries without a tab are dropped and their children
+// move up to the nearest remaining ancestor; tabs without an entry are
+// returned as unmatched. Parents are stored by position, so tabs moved since
+// the structure was saved are handled like a closed and a new tab.
+//   uniqueIds: the unique ids of the window's tabs, in tab order
+//   => structure[n] is the entry for the tab at tabIndices[n], in the format
+//      of getTreeStructureFromTabs(); null for a broken or legacy structure
+export function alignTreeStructure(structure, uniqueIds) {
+  if (!Array.isArray(structure) ||
+      structure.some(entry => !entry?.id))
+    return null;
+
+  // Parents are counted from the last root entry, as in
+  // applyTreeStructureToTabs().
+  const parentPositions = [];
+  let rootPosition = 0;
+  structure.forEach((entry, position) => {
+    const parent = entry.parent;
+    if (!Number.isInteger(parent) || parent < 0) {
+      rootPosition = position;
+      parentPositions.push(STRUCTURE_NO_PARENT);
+      return;
+    }
+    const parentPosition = rootPosition + parent;
+    parentPositions.push(parentPosition < position ? parentPosition : STRUCTURE_NO_PARENT);
+  });
+
+  const tabIndexById = new Map();
+  uniqueIds.forEach((id, index) => {
+    if (id && !tabIndexById.has(id))
+      tabIndexById.set(id, index);
+  });
+  const claimedTabIndices = new Set();
+  const tabIndexAt = structure.map(entry => {
+    const index = tabIndexById.get(entry.id);
+    if (index === undefined ||
+        claimedTabIndices.has(index))
+      return undefined;
+    claimedTabIndices.add(index);
+    return index;
+  });
+
+  const movedIds = [];
+  const inOrder = longestIncreasingSubsequence(tabIndexAt);
+  tabIndexAt.forEach((index, position) => {
+    if (index === undefined ||
+        inOrder.has(position))
+      return;
+    movedIds.push(structure[position].id);
+    claimedTabIndices.delete(index);
+    tabIndexAt[position] = undefined;
+  });
+
+  const tabIndices = [];
+  const alignedStructure = [];
+  const droppedIds = [];
+  const alignedIndexAt = new Map();
+  let alignedRootIndex = 0;
+  structure.forEach((entry, position) => {
+    if (tabIndexAt[position] === undefined) {
+      droppedIds.push(entry.id);
+      return;
+    }
+    let parentPosition = parentPositions[position];
+    while (parentPosition >= 0 &&
+           tabIndexAt[parentPosition] === undefined) {
+      parentPosition = parentPositions[parentPosition];
+    }
+    const alignedIndex = alignedStructure.length;
+    const alignedParentIndex = parentPosition >= 0 ? alignedIndexAt.get(parentPosition) : undefined;
+    let parent = STRUCTURE_NO_PARENT;
+    if (alignedParentIndex >= alignedRootIndex)
+      parent = alignedParentIndex - alignedRootIndex;
+    else
+      alignedRootIndex = alignedIndex;
+    alignedIndexAt.set(position, alignedIndex);
+    tabIndices.push(tabIndexAt[position]);
+    alignedStructure.push({ ...entry, parent });
+  });
+
+  const unmatchedTabIndices = [];
+  for (let index = 0; index < uniqueIds.length; index++) {
+    if (!claimedTabIndices.has(index))
+      unmatchedTabIndices.push(index);
+  }
+
+  return {
+    tabIndices,
+    structure: alignedStructure,
+    droppedIds, // including movedIds
+    movedIds,
+    unmatchedTabIndices,
+  };
+}
+
+// Positions of the longest strictly increasing subsequence of the numbers
+// (undefined items are skipped).
+function longestIncreasingSubsequence(values) {
+  const tails = []; // tails[length - 1]: position of the smallest last value
+  const previous = new Map();
+  values.forEach((value, position) => {
+    if (value === undefined)
+      return;
+    let low = 0;
+    let high = tails.length;
+    while (low < high) {
+      const middle = (low + high) >> 1;
+      if (values[tails[middle]] < value)
+        low = middle + 1;
+      else
+        high = middle;
+    }
+    if (low > 0)
+      previous.set(position, tails[low - 1]);
+    tails[low] = position;
+  });
+  const positions = new Set();
+  for (let position = tails[tails.length - 1]; position !== undefined; position = previous.get(position)) {
+    positions.add(position);
+  }
+  return positions;
+}
