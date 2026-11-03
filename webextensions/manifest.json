@@ -19,7 +19,8 @@
     "sidePanel",
     "storage",
     "tabGroups",
-    "tabs"
+    "tabs",
+    "unlimitedStorage"
   ],
   "optional_permissions": [
     "bookmarks",

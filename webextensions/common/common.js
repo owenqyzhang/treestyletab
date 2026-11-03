@@ -932,6 +932,12 @@ async function restoreRecordedLogs() {
   while (log.context.endsWith('?')) { // the sidebar learns its window later
     await wait(500);
   }
+  if (log.context == 'BG') {
+    pruneLogsOfClosedWindows().catch(_error => {});
+    browser.windows.onRemoved.addListener(() => {
+      pruneLogsOfClosedWindows().catch(_error => {});
+    });
+  }
   try {
     const key = logStorageKey();
     const stored = (await browser.storage.local.get(key))[key];
@@ -943,6 +949,25 @@ async function restoreRecordedLogs() {
   }
   catch(_error) {
   }
+}
+
+// The sidebar of every window leaves its log behind: keep only the latest few
+// of those, as storage.local also holds the tree data.
+const MAX_LOGS_OF_CLOSED_WINDOWS = 3;
+async function pruneLogsOfClosedWindows() {
+  const prefix = `${LOG_STORAGE_KEY_PREFIX}Sidebar-`;
+  const [stored, windows] = await Promise.all([
+    browser.storage.local.get(null),
+    browser.windows.getAll(),
+  ]);
+  const openWindowIds = new Set(windows.map(win => String(win.id)));
+  const keys = Object.entries(stored)
+    .filter(([key]) => key.startsWith(prefix) && !openWindowIds.has(key.slice(prefix.length)))
+    .sort(([, a], [, b]) => (b?.savedAt || 0) - (a?.savedAt || 0))
+    .slice(MAX_LOGS_OF_CLOSED_WINDOWS)
+    .map(([key]) => key);
+  if (keys.length > 0)
+    await browser.storage.local.remove(keys);
 }
 
 // Collects the recorded logs of all contexts (background, sidebars, options)
